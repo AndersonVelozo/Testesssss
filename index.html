@@ -269,7 +269,6 @@
               <th>Situação da Habilitação</th>
               <th>Data da Situação</th>
               <th>Submodalidade</th>
-              <!-- novas colunas -->
               <th>Razão Social</th>
               <th>Nome Fantasia</th>
               <th>Município (UF)</th>
@@ -290,6 +289,9 @@
     </div>
 
     <script>
+      // ====== CONFIGURAÇÃO BACKEND (AJUSTE AQUI QUANDO HOSPEDAR) ======
+      const BACKEND_BASE_URL = "http://localhost:3000";
+
       // ---------- ELEMENTOS BÁSICOS ----------
       const cnpjInput = document.getElementById("cnpj");
       const rawText = document.getElementById("rawText");
@@ -496,16 +498,14 @@
         reader.readAsArrayBuffer(file);
       });
 
-      // ---------- CONSULTA RADAR VIA BACKEND (somente RADAR) ----------
+      // ---------- CONSULTA RADAR VIA BACKEND ----------
       async function consultarRadarPorCnpj(cnpj) {
         const resp = await fetch(
-          `http://localhost:3000/consulta-radar?cnpj=${encodeURIComponent(
-            cnpj
-          )}`
+          `${BACKEND_BASE_URL}/consulta-radar?cnpj=${encodeURIComponent(cnpj)}`
         );
 
         if (!resp.ok) {
-          throw new Error("Erro ao consultar backend");
+          throw new Error("Erro ao consultar backend RADAR");
         }
 
         const data = await resp.json();
@@ -513,9 +513,11 @@
         return data;
       }
 
-      // ---------- CONSULTA RECEITAWS DIRETA (dados extras) ----------
+      // ---------- CONSULTA RECEITAWS VIA BACKEND ----------
       async function consultarReceitaWs(cnpj) {
-        const url = `https://www.receitaws.com.br/v1/CNPJ/${cnpj}`;
+        const url = `${BACKEND_BASE_URL}/consulta-receitaws?cnpj=${encodeURIComponent(
+          cnpj
+        )}`;
 
         try {
           const resp = await fetch(url);
@@ -581,7 +583,7 @@
             capitalSocial,
           };
         } catch (err) {
-          console.error("Erro ao consultar ReceitaWS", cnpj, err);
+          console.error("Erro ao consultar ReceitaWS (via backend)", cnpj, err);
           return {
             razaoSocial: "",
             nomeFantasia: "",
@@ -689,7 +691,6 @@
           return;
         }
 
-        // busca somente na ReceitaWS (não depende do backend)
         const extras = await consultarReceitaWs(cnpj);
 
         adicionarLinhaTabela(

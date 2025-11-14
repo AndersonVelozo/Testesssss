@@ -1,3 +1,6 @@
+// ====== CONFIGURAÇÃO DO BACKEND (AJUSTE QUANDO HOSPEDAR) ======
+const BACKEND_BASE_URL = "http://localhost:3000";
+
 // ---------- ELEMENTOS BÁSICOS ----------
 const cnpjInput = document.getElementById("cnpj");
 const rawText = document.getElementById("rawText");
@@ -18,7 +21,8 @@ const loteProgressBar = document.getElementById("loteProgressBar");
 // ---------- LOCALSTORAGE ----------
 const STORAGE_KEY = "radar_registros_habilitacao";
 
-let registros = []; // array de objetos {cnpj, contribuinte, situacao, dataSituacao, submodalidade}
+// agora o registro guarda também os campos da ReceitaWS
+let registros = []; // { cnpj, contribuinte, situacao, dataSituacao, submodalidade, razaoSocial, nomeFantasia, municipioUf, dataConstituicao, regimeTributario, capitalSocial }
 
 function salvarNoLocalStorage() {
   try {
@@ -66,6 +70,12 @@ function criarLinhaDOM(registro) {
     </td>
     <td>${registro.dataSituacao || ""}</td>
     <td>${registro.submodalidade || ""}</td>
+    <td>${registro.razaoSocial || ""}</td>
+    <td>${registro.nomeFantasia || ""}</td>
+    <td>${registro.municipioUf || ""}</td>
+    <td>${registro.dataConstituicao || ""}</td>
+    <td>${registro.regimeTributario || ""}</td>
+    <td>${registro.capitalSocial || ""}</td>
   `;
 
   tableBody.appendChild(tr);
@@ -76,7 +86,13 @@ function adicionarLinhaTabela(
   contribuinte,
   situacao,
   dataSituacao,
-  submodalidade
+  submodalidade,
+  razaoSocial,
+  nomeFantasia,
+  municipioUf,
+  dataConstituicao,
+  regimeTributario,
+  capitalSocial
 ) {
   removerLinhaVazia();
 
@@ -86,6 +102,12 @@ function adicionarLinhaTabela(
     situacao: situacao || "",
     dataSituacao: dataSituacao || "",
     submodalidade: submodalidade || "",
+    razaoSocial: razaoSocial || "",
+    nomeFantasia: nomeFantasia || "",
+    municipioUf: municipioUf || "",
+    dataConstituicao: dataConstituicao || "",
+    regimeTributario: regimeTributario || "",
+    capitalSocial: capitalSocial || "",
   };
 
   registros.push(registro);
@@ -96,7 +118,7 @@ function adicionarLinhaTabela(
 function renderizarTodos() {
   tableBody.innerHTML = `
     <tr class="no-data-row">
-      <td colspan="5" class="no-data">Nenhum registro adicionado ainda</td>
+      <td colspan="11" class="no-data">Nenhum registro adicionado ainda</td>
     </tr>
   `;
 
@@ -184,22 +206,107 @@ fileInput.addEventListener("change", (event) => {
   reader.readAsArrayBuffer(file);
 });
 
-// ---------- CONSULTA REAL VIA BACKEND ----------
+// ---------- CONSULTAS VIA BACKEND ----------
+
+// RADAR
 async function consultarRadarPorCnpj(cnpj) {
   const resp = await fetch(
-    `http://localhost:3000/consulta-radar?cnpj=${encodeURIComponent(cnpj)}`
+    `${BACKEND_BASE_URL}/consulta-radar?cnpj=${encodeURIComponent(cnpj)}`
   );
 
   if (!resp.ok) {
-    throw new Error("Erro ao consultar backend");
+    throw new Error("Erro ao consultar backend (RADAR)");
   }
 
   const data = await resp.json();
-  console.log("Resposta do backend para", cnpj, data);
+  console.log("Resposta RADAR backend para", cnpj, data);
 
-  return data;
+  return data; // { contribuinte, situacao, dataSituacao, submodalidade }
 }
 
+// ReceitaWS (dados cadastrais)
+async function consultarReceitaWs(cnpj) {
+  const url = `${BACKEND_BASE_URL}/consulta-receitaws?cnpj=${encodeURIComponent(
+    cnpj
+  )}`;
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      throw new Error("HTTP " + resp.status);
+    }
+    const d = await resp.json();
+
+    if (d.status && d.status !== "OK") {
+      return {
+        razaoSocial: "",
+        nomeFantasia: "",
+        municipioUf: "",
+        dataConstituicao: "",
+        regimeTributario: "",
+        capitalSocial: "",
+      };
+    }
+
+    const razaoSocial = d.nome || "";
+    const nomeFantasia = d.fantasia || "";
+
+    const municipio = d.municipio || "";
+    const uf = d.uf || "";
+    const municipioUf =
+      municipio && uf ? `${municipio} (${uf})` : municipio || uf || "";
+
+    const dataConstituicao = d.abertura || "";
+
+    let regimeTributario = "";
+    if (d.simples && typeof d.simples.optante === "boolean") {
+      if (d.simples.optante) {
+        regimeTributario = "Simples Nacional";
+        if (d.simples.data_opcao) {
+          regimeTributario += ` desde ${d.simples.data_opcao}`;
+        }
+      } else {
+        regimeTributario = "Regime Normal (Lucro Real ou Presumido)";
+      }
+    }
+
+    let capitalSocial = "";
+    if (d.capital_social) {
+      const num = Number(String(d.capital_social).replace(",", "."));
+      if (!isNaN(num)) {
+        capitalSocial =
+          "R$ " +
+          num.toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+      } else {
+        capitalSocial = `R$ ${d.capital_social}`;
+      }
+    }
+
+    return {
+      razaoSocial,
+      nomeFantasia,
+      municipioUf,
+      dataConstituicao,
+      regimeTributario,
+      capitalSocial,
+    };
+  } catch (err) {
+    console.error("Erro ao consultar ReceitaWS (via backend)", cnpj, err);
+    return {
+      razaoSocial: "",
+      nomeFantasia: "",
+      municipioUf: "",
+      dataConstituicao: "",
+      regimeTributario: "",
+      capitalSocial: "",
+    };
+  }
+}
+
+// ---------- PROCESSAR LOTE ----------
 async function processarLoteCnpjs(cnpjs) {
   const total = cnpjs.length;
   let processados = 0;
@@ -208,19 +315,39 @@ async function processarLoteCnpjs(cnpjs) {
 
   for (const cnpj of cnpjs) {
     try {
-      const { contribuinte, situacao, dataSituacao, submodalidade } =
-        await consultarRadarPorCnpj(cnpj);
+      const [radar, receita] = await Promise.all([
+        consultarRadarPorCnpj(cnpj),
+        consultarReceitaWs(cnpj),
+      ]);
 
       adicionarLinhaTabela(
         cnpj,
-        contribuinte,
-        situacao,
-        dataSituacao,
-        submodalidade
+        radar.contribuinte,
+        radar.situacao,
+        radar.dataSituacao,
+        radar.submodalidade,
+        receita.razaoSocial,
+        receita.nomeFantasia,
+        receita.municipioUf,
+        receita.dataConstituicao,
+        receita.regimeTributario,
+        receita.capitalSocial
       );
     } catch (err) {
       console.error("Erro ao consultar CNPJ", cnpj, err);
-      adicionarLinhaTabela(cnpj, "(erro na consulta)", "ERRO", "", "");
+      adicionarLinhaTabela(
+        cnpj,
+        "(erro na consulta)",
+        "ERRO",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      );
     } finally {
       processados++;
       atualizarProgressoLote(processados, total);
@@ -228,7 +355,7 @@ async function processarLoteCnpjs(cnpjs) {
   }
 }
 
-// ---------- CONSULTA UNITÁRIA (COLANDO O TEXTO) ----------
+// ---------- CONSULTA UNITÁRIA (COLANDO O TEXTO RADAR) ----------
 function extrairDadosDoTexto(texto) {
   const t = texto.replace(/\r/g, "");
 
@@ -247,7 +374,7 @@ function extrairDadosDoTexto(texto) {
   };
 }
 
-extractAddBtn.addEventListener("click", () => {
+extractAddBtn.addEventListener("click", async () => {
   const cnpj = normalizarCNPJ(cnpjInput.value.trim());
   const texto = rawText.value.trim();
 
@@ -270,12 +397,21 @@ extractAddBtn.addEventListener("click", () => {
     return;
   }
 
+  // Dados extras (ReceitaWS) via backend
+  const extras = await consultarReceitaWs(cnpj);
+
   adicionarLinhaTabela(
     cnpj,
     contribuinte,
     situacao,
     dataSituacao,
-    submodalidade
+    submodalidade,
+    extras.razaoSocial,
+    extras.nomeFantasia,
+    extras.municipioUf,
+    extras.dataConstituicao,
+    extras.regimeTributario,
+    extras.capitalSocial
   );
 
   rawText.value = "";
@@ -307,13 +443,22 @@ async function reconsultarErros() {
 
   for (const reg of erros) {
     try {
-      const { contribuinte, situacao, dataSituacao, submodalidade } =
-        await consultarRadarPorCnpj(reg.cnpj);
+      const [radar, receita] = await Promise.all([
+        consultarRadarPorCnpj(reg.cnpj),
+        consultarReceitaWs(reg.cnpj),
+      ]);
 
-      reg.contribuinte = contribuinte;
-      reg.situacao = situacao;
-      reg.dataSituacao = dataSituacao;
-      reg.submodalidade = submodalidade;
+      reg.contribuinte = radar.contribuinte;
+      reg.situacao = radar.situacao;
+      reg.dataSituacao = radar.dataSituacao;
+      reg.submodalidade = radar.submodalidade;
+
+      reg.razaoSocial = receita.razaoSocial;
+      reg.nomeFantasia = receita.nomeFantasia;
+      reg.municipioUf = receita.municipioUf;
+      reg.dataConstituicao = receita.dataConstituicao;
+      reg.regimeTributario = receita.regimeTributario;
+      reg.capitalSocial = receita.capitalSocial;
     } catch (err) {
       console.error("Erro ao reconsultar CNPJ", reg.cnpj, err);
     } finally {
@@ -326,4 +471,69 @@ async function reconsultarErros() {
   renderizarTodos();
 }
 
-retryEr;
+retryErrorsBtn.addEventListener("click", reconsultarErros);
+
+// ---------- LIMPAR TABELA ----------
+clearTableBtn.addEventListener("click", () => {
+  registros = [];
+  salvarNoLocalStorage();
+  renderizarTodos();
+  atualizarProgressoLote(0, 0);
+});
+
+// ---------- EXPORTAR PARA EXCEL ----------
+exportExcelBtn.addEventListener("click", () => {
+  const rows = Array.from(tableBody.querySelectorAll("tr")).filter(
+    (tr) => !tr.classList.contains("no-data-row")
+  );
+
+  if (!rows.length) {
+    alert("Não há dados para exportar.");
+    return;
+  }
+
+  const data = [];
+  data.push([
+    "CNPJ",
+    "Contribuinte",
+    "Situação da Habilitação",
+    "Data da Situação",
+    "Submodalidade",
+    "Razão Social",
+    "Nome Fantasia",
+    "Município (UF)",
+    "Data de Constituição",
+    "Regime Tributário",
+    "Capital Social",
+  ]);
+
+  rows.forEach((tr) => {
+    const tds = tr.querySelectorAll("td");
+    data.push([
+      tds[0].innerText,
+      tds[1].innerText,
+      tds[2].innerText,
+      tds[3].innerText,
+      tds[4].innerText,
+      tds[5].innerText,
+      tds[6].innerText,
+      tds[7].innerText,
+      tds[8].innerText,
+      tds[9].innerText,
+      tds[10].innerText,
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Habilitações");
+
+  XLSX.writeFile(wb, "habilitacoes_comercio_exterior.xlsx");
+});
+
+// ---------- CARREGAR DADOS AO ABRIR A PÁGINA ----------
+window.addEventListener("DOMContentLoaded", () => {
+  registros = carregarDoLocalStorage();
+  renderizarTodos();
+  atualizarProgressoLote(0, 0);
+});

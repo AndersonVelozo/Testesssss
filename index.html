@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Habilitação RADAR – Coletor Semi-Automatizado</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- SheetJS para gerar Excel e ler planilha importada -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #f3f4f6;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: #ffffff;
+        padding: 20px 24px;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+        color: #111827;
+      }
+      .subtitle {
+        color: #6b7280;
+        margin-bottom: 16px;
+        font-size: 0.9rem;
+      }
+      label {
+        display: block;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 4px;
+      }
+      input,
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 10px;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        font-size: 0.9rem;
+      }
+      input:focus,
+      textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px #2563eb33;
+      }
+      textarea {
+        min-height: 150px;
+        resize: vertical;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 2fr 3fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-primary {
+        background: #2563eb;
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background: #1d4ed8;
+      }
+      .btn-secondary {
+        background: #e5e7eb;
+        color: #111827;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      th,
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid #e5e7eb;
+        text-align: left;
+      }
+      th {
+        background: #f9fafb;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #4b5563;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      tbody tr:nth-child(even) {
+        background: #f9fafb;
+      }
+      .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .tag.negado {
+        background: #fee2e2;
+        color: #b91c1c;
+      }
+      .no-data {
+        text-align: center;
+        color: #9ca3af;
+        font-size: 0.9rem;
+        padding: 16px 0;
+      }
+      .progress-text {
+        font-size: 0.8rem;
+        color: #4b5563;
+        margin-bottom: 8px;
+      }
+      .progress-bar-wrapper {
+        width: 100%;
+        background: #e5e7eb;
+        border-radius: 999px;
+        overflow: hidden;
+        height: 8px;
+        margin-bottom: 12px;
+      }
+      .progress-bar-inner {
+        height: 100%;
+        width: 0%;
+        background: #2563eb;
+        transition: width 0.2s ease-out;
+      }
+
+      @media (max-width: 900px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Coletor de Habilitação RADAR (semi-automatizado)</h1>
+      <p class="subtitle">
+        • Campo de CNPJ acima: consulta <strong>unitária</strong> (você consulta
+        na Receita, copia o resultado e cola ao lado).<br />
+        • Botão <strong>“🌐 Abrir Receita (consulta RADAR)”</strong>: abrir o
+        site oficial da Receita para consulta manual (CAPTCHA).<br />
+        • Campo de <strong>importar planilha</strong> abaixo: consulta em
+        <strong>lote</strong> via API (Infosimples) a partir de um Excel com
+        apenas a coluna de CNPJ.
+      </p>
+
+      <div class="grid">
+        <!-- Lado esquerdo: CNPJ + botões -->
+        <div>
+          <label for="cnpj">CNPJ (apenas números ou formatado)</label>
+          <input
+            id="cnpj"
+            placeholder="Ex: 48.136.358/0001-72 ou 48136358000172"
+          />
+
+          <div class="btn-row" style="margin-top: 10px">
+            <!-- ABRE O SITE DA RECEITA -->
+            <button type="button" class="btn-secondary" id="openReceita">
+              🌐 Abrir Receita (consulta RADAR)
+            </button>
+          </div>
+
+          <!-- Campo para importar planilha (lote) -->
+          <label style="margin-top: 16px"
+            >Importar planilha de CNPJs (lote)</label
+          >
+          <div class="btn-row">
+            <button type="button" class="btn-secondary" id="importExcelBtn">
+              📂 Importar planilha de CNPJs (via API)
+            </button>
+            <input
+              type="file"
+              id="fileInput"
+              accept=".xlsx,.xls,.csv"
+              style="display: none"
+            />
+          </div>
+
+          <!-- Progresso das consultas em lote -->
+          <div id="loteContainer">
+            <div id="loteStatus" class="progress-text">
+              Nenhuma consulta em lote em andamento.
+            </div>
+            <div class="progress-bar-wrapper">
+              <div
+                id="loteProgressBar"
+                class="progress-bar-inner"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lado direito: textarea para colar o resultado -->
+        <div>
+          <label for="rawText"
+            >Cole aqui o texto da página de resultado da Receita (consulta
+            unitária)</label
+          >
+          <textarea
+            id="rawText"
+            placeholder="Depois de consultar o CNPJ na Receita, selecione tudo (Ctrl+A), copie (Ctrl+C) e cole aqui (Ctrl+V)."
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn-primary" id="extractAdd">
+          ➕ Extrair e adicionar linha
+        </button>
+        <button type="button" class="btn-secondary" id="clearTable">
+          🧹 Limpar tabela
+        </button>
+        <button type="button" class="btn-secondary" id="exportExcel">
+          📊 Exportar para Excel
+        </button>
+        <button type="button" class="btn-secondary" id="retryErrors">
+          🔁 Reconsultar erros
+        </button>
+      </div>
+
+      <div
+        style="
+          max-height: 400px;
+          overflow: auto;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+        "
+      >
+        <table id="resultTable">
+          <thead>
+            <tr>
+              <th>CNPJ</th>
+              <th>Contribuinte</th>
+              <th>Situação da Habilitação</th>
+              <th>Data da Situação</th>
+              <th>Submodalidade</th>
+              <!-- novas colunas -->
+              <th>Razão Social</th>
+              <th>Nome Fantasia</th>
+              <th>Município (UF)</th>
+              <th>Data de Constituição</th>
+              <th>Regime Tributário</th>
+              <th>Capital Social</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="no-data-row">
+              <td colspan="11" class="no-data">
+                Nenhum registro adicionado ainda
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script>
+      // ---------- ELEMENTOS BÁSICOS ----------
+      const cnpjInput = document.getElementById("cnpj");
+      const rawText = document.getElementById("rawText");
+      const tableBody = document.querySelector("#resultTable tbody");
+
+      const openReceitaBtn = document.getElementById("openReceita");
+      const importExcelBtn = document.getElementById("importExcelBtn");
+      const fileInput = document.getElementById("fileInput");
+
+      const extractAddBtn = document.getElementById("extractAdd");
+      const clearTableBtn = document.getElementById("clearTable");
+      const exportExcelBtn = document.getElementById("exportExcel");
+      const retryErrorsBtn = document.getElementById("retryErrors");
+
+      const loteStatusEl = document.getElementById("loteStatus");
+      const loteProgressBar = document.getElementById("loteProgressBar");
+
+      // ---------- LOCALSTORAGE ----------
+      const STORAGE_KEY = "radar_registros_habilitacao";
+
+      let registros = [];
+
+      function salvarNoLocalStorage() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+        } catch (e) {
+          console.error("Erro ao salvar no localStorage:", e);
+        }
+      }
+
+      function carregarDoLocalStorage() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return [];
+          const arr = JSON.parse(raw);
+          return Array.isArray(arr) ? arr : [];
+        } catch (e) {
+          console.error("Erro ao carregar do localStorage:", e);
+          return [];
+        }
+      }
+
+      function normalizarCNPJ(v) {
+        return v.replace(/\D/g, "");
+      }
+
+      function removerLinhaVazia() {
+        const noDataRow = tableBody.querySelector(".no-data-row");
+        if (noDataRow) tableBody.removeChild(noDataRow);
+      }
+
+      // ---------- RENDERIZAÇÃO DA TABELA ----------
+      function criarLinhaDOM(registro) {
+        const tr = document.createElement("tr");
+        const sitUpper = (registro.situacao || "").toUpperCase();
+
+        tr.innerHTML = `
+          <td>${registro.cnpj || ""}</td>
+          <td>${registro.contribuinte || ""}</td>
+          <td>
+            <span class="tag ${
+              /INDEFERIDA|CANCELADA|SUSPENSA|ERRO/.test(sitUpper)
+                ? "negado"
+                : ""
+            }">
+              ${registro.situacao || ""}
+            </span>
+          </td>
+          <td>${registro.dataSituacao || ""}</td>
+          <td>${registro.submodalidade || ""}</td>
+          <td>${registro.razaoSocial || ""}</td>
+          <td>${registro.nomeFantasia || ""}</td>
+          <td>${registro.municipioUf || ""}</td>
+          <td>${registro.dataConstituicao || ""}</td>
+          <td>${registro.regimeTributario || ""}</td>
+          <td>${registro.capitalSocial || ""}</td>
+        `;
+
+        tableBody.appendChild(tr);
+      }
+
+      function adicionarLinhaTabela(
+        cnpj,
+        contribuinte,
+        situacao,
+        dataSituacao,
+        submodalidade,
+        razaoSocial,
+        nomeFantasia,
+        municipioUf,
+        dataConstituicao,
+        regimeTributario,
+        capitalSocial
+      ) {
+        removerLinhaVazia();
+
+        const registro = {
+          cnpj: cnpj || "",
+          contribuinte: contribuinte || "",
+          situacao: situacao || "",
+          dataSituacao: dataSituacao || "",
+          submodalidade: submodalidade || "",
+          razaoSocial: razaoSocial || "",
+          nomeFantasia: nomeFantasia || "",
+          municipioUf: municipioUf || "",
+          dataConstituicao: dataConstituicao || "",
+          regimeTributario: regimeTributario || "",
+          capitalSocial: capitalSocial || "",
+        };
+
+        registros.push(registro);
+        criarLinhaDOM(registro);
+        salvarNoLocalStorage();
+      }
+
+      function renderizarTodos() {
+        tableBody.innerHTML = `
+          <tr class="no-data-row">
+            <td colspan="11" class="no-data">Nenhum registro adicionado ainda</td>
+          </tr>
+        `;
+
+        if (!registros.length) return;
+
+        removerLinhaVazia();
+        registros.forEach((r) => criarLinhaDOM(r));
+      }
+
+      // ---------- PROGRESSO DO LOTE ----------
+      function atualizarProgressoLote(processados, total) {
+        if (!total || total <= 0) {
+          loteStatusEl.textContent = "Nenhuma consulta em lote em andamento.";
+          loteProgressBar.style.width = "0%";
+          return;
+        }
+
+        const perc = Math.round((processados / total) * 100);
+        loteStatusEl.textContent = `Consultas em lote: ${processados}/${total} (${perc}%)`;
+        loteProgressBar.style.width = perc + "%";
+
+        if (processados >= total) {
+          loteStatusEl.textContent = `Consultas em lote concluídas: ${total}/${total} (100%)`;
+        }
+      }
+
+      // ---------- BOTÃO: ABRIR RECEITA ----------
+      openReceitaBtn.addEventListener("click", () => {
+        const url =
+          "https://servicos.receita.fazenda.gov.br/servicos/radar/consultaSituacaoCpfCnpj.asp";
+        window.open(url, "_blank");
+      });
+
+      // ---------- IMPORTAÇÃO DA PLANILHA (LOTE VIA API) ----------
+      importExcelBtn.addEventListener("click", () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+            const cnpjs = rows
+              .slice(1)
+              .map((row) => normalizarCNPJ(String(row[0] || "")))
+              .filter((c) => c.length > 0);
+
+            if (!cnpjs.length) {
+              alert(
+                "Não foi possível encontrar CNPJs na primeira coluna da planilha."
+              );
+              return;
+            }
+
+            if (
+              !confirm(
+                `Foram encontrados ${cnpjs.length} CNPJs. Deseja iniciar a consulta em lote (via API)?`
+              )
+            ) {
+              return;
+            }
+
+            await processarLoteCnpjs(cnpjs);
+          } catch (err) {
+            console.error(err);
+            alert(
+              "Ocorreu um erro ao ler a planilha. Verifique o arquivo e tente novamente."
+            );
+          } finally {
+            fileInput.value = "";
+          }
+        };
+
+        reader.readAsArrayBuffer(file);
+      });
+
+      // ---------- CONSULTA RADAR VIA BACKEND (somente RADAR) ----------
+      async function consultarRadarPorCnpj(cnpj) {
+        const resp = await fetch(
+          `http://localhost:3000/consulta-radar?cnpj=${encodeURIComponent(
+            cnpj
+          )}`
+        );
+
+        if (!resp.ok) {
+          throw new Error("Erro ao consultar backend");
+        }
+
+        const data = await resp.json();
+        console.log("Resposta RADAR backend para", cnpj, data);
+        return data;
+      }
+
+      // ---------- CONSULTA RECEITAWS DIRETA (dados extras) ----------
+      async function consultarReceitaWs(cnpj) {
+        const url = `https://www.receitaws.com.br/v1/CNPJ/${cnpj}`;
+
+        try {
+          const resp = await fetch(url);
+          if (!resp.ok) {
+            throw new Error("HTTP " + resp.status);
+          }
+          const d = await resp.json();
+
+          if (d.status && d.status !== "OK") {
+            return {
+              razaoSocial: "",
+              nomeFantasia: "",
+              municipioUf: "",
+              dataConstituicao: "",
+              regimeTributario: "",
+              capitalSocial: "",
+            };
+          }
+
+          const razaoSocial = d.nome || "";
+          const nomeFantasia = d.fantasia || "";
+
+          const municipio = d.municipio || "";
+          const uf = d.uf || "";
+          const municipioUf =
+            municipio && uf ? `${municipio} (${uf})` : municipio || uf || "";
+
+          const dataConstituicao = d.abertura || "";
+
+          let regimeTributario = "";
+          if (d.simples && typeof d.simples.optante === "boolean") {
+            if (d.simples.optante) {
+              regimeTributario = "Simples Nacional";
+              if (d.simples.data_opcao) {
+                regimeTributario += ` desde ${d.simples.data_opcao}`;
+              }
+            } else {
+              regimeTributario = "Regime Normal (Lucro Real ou Presumido)";
+            }
+          }
+
+          let capitalSocial = "";
+          if (d.capital_social) {
+            const num = Number(String(d.capital_social).replace(",", "."));
+            if (!isNaN(num)) {
+              capitalSocial =
+                "R$ " +
+                num.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                });
+            } else {
+              capitalSocial = `R$ ${d.capital_social}`;
+            }
+          }
+
+          return {
+            razaoSocial,
+            nomeFantasia,
+            municipioUf,
+            dataConstituicao,
+            regimeTributario,
+            capitalSocial,
+          };
+        } catch (err) {
+          console.error("Erro ao consultar ReceitaWS", cnpj, err);
+          return {
+            razaoSocial: "",
+            nomeFantasia: "",
+            municipioUf: "",
+            dataConstituicao: "",
+            regimeTributario: "",
+            capitalSocial: "",
+          };
+        }
+      }
+
+      // ---------- PROCESSAR LOTE ----------
+      async function processarLoteCnpjs(cnpjs) {
+        const total = cnpjs.length;
+        let processados = 0;
+
+        atualizarProgressoLote(0, total);
+
+        for (const cnpj of cnpjs) {
+          try {
+            const [radar, receita] = await Promise.all([
+              consultarRadarPorCnpj(cnpj),
+              consultarReceitaWs(cnpj),
+            ]);
+
+            adicionarLinhaTabela(
+              cnpj,
+              radar.contribuinte,
+              radar.situacao,
+              radar.dataSituacao,
+              radar.submodalidade,
+              receita.razaoSocial,
+              receita.nomeFantasia,
+              receita.municipioUf,
+              receita.dataConstituicao,
+              receita.regimeTributario,
+              receita.capitalSocial
+            );
+          } catch (err) {
+            console.error("Erro ao consultar CNPJ", cnpj, err);
+            adicionarLinhaTabela(
+              cnpj,
+              "(erro na consulta)",
+              "ERRO",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              "",
+              ""
+            );
+          } finally {
+            processados++;
+            atualizarProgressoLote(processados, total);
+          }
+        }
+      }
+
+      // ---------- EXTRAI DADOS RADAR DO TEXTO ----------
+      function extrairDadosDoTexto(texto) {
+        const t = texto.replace(/\r/g, "");
+
+        const contribMatch = t.match(
+          /Contribuinte:\s*(.+?)\s*Situa[cç][aã]o da Habilita[cç][aã]o:/s
+        );
+        const sitMatch = t.match(
+          /Situa[cç][aã]o da Habilita[cç][aã]o:\s*([^\n\r]+)/
+        );
+        const dataMatch = t.match(/Data da Situa[cç][aã]o:\s*([^\n\r]+)/);
+        const subMatch = t.match(/Submodalidade:\s*([^\n\r]+)/);
+
+        return {
+          contribuinte: contribMatch ? contribMatch[1].trim() : "",
+          situacao: sitMatch ? sitMatch[1].trim() : "",
+          dataSituacao: dataMatch ? dataMatch[1].trim() : "",
+          submodalidade: subMatch ? subMatch[1].trim() : "",
+        };
+      }
+
+      // ---------- BOTÃO: EXTRair E ADICIONAR (consulta unitária) ----------
+      extractAddBtn.addEventListener("click", async () => {
+        const cnpj = normalizarCNPJ(cnpjInput.value.trim());
+        const texto = rawText.value.trim();
+
+        if (!cnpj) {
+          alert("Informe o CNPJ.");
+          return;
+        }
+        if (!texto) {
+          alert(
+            "Cole o texto da página de resultado da Receita antes de extrair."
+          );
+          return;
+        }
+
+        const { contribuinte, situacao, dataSituacao, submodalidade } =
+          extrairDadosDoTexto(texto);
+
+        if (!contribuinte || !situacao || !dataSituacao || !submodalidade) {
+          alert(
+            "Não foi possível encontrar todos os campos no texto colado. Confira se copiou a página inteira."
+          );
+          return;
+        }
+
+        // busca somente na ReceitaWS (não depende do backend)
+        const extras = await consultarReceitaWs(cnpj);
+
+        adicionarLinhaTabela(
+          cnpj,
+          contribuinte,
+          situacao,
+          dataSituacao,
+          submodalidade,
+          extras.razaoSocial,
+          extras.nomeFantasia,
+          extras.municipioUf,
+          extras.dataConstituicao,
+          extras.regimeTributario,
+          extras.capitalSocial
+        );
+
+        rawText.value = "";
+      });
+
+      // ---------- RECONSULTAR ERROS ----------
+      async function reconsultarErros() {
+        const erros = registros.filter((r) => {
+          const sit = (r.situacao || "").toUpperCase();
+          return sit === "ERRO" || r.contribuinte === "(erro na consulta)";
+        });
+
+        if (!erros.length) {
+          alert("Não há registros com ERRO para reconsultar.");
+          return;
+        }
+
+        if (
+          !confirm(
+            `Foram encontrados ${erros.length} registros com ERRO. Deseja tentar consultar novamente estes CNPJs?`
+          )
+        ) {
+          return;
+        }
+
+        const total = erros.length;
+        let processados = 0;
+        atualizarProgressoLote(0, total);
+
+        for (const reg of erros) {
+          try {
+            const [radar, receita] = await Promise.all([
+              consultarRadarPorCnpj(reg.cnpj),
+              consultarReceitaWs(reg.cnpj),
+            ]);
+
+            reg.contribuinte = radar.contribuinte;
+            reg.situacao = radar.situacao;
+            reg.dataSituacao = radar.dataSituacao;
+            reg.submodalidade = radar.submodalidade;
+
+            reg.razaoSocial = receita.razaoSocial;
+            reg.nomeFantasia = receita.nomeFantasia;
+            reg.municipioUf = receita.municipioUf;
+            reg.dataConstituicao = receita.dataConstituicao;
+            reg.regimeTributario = receita.regimeTributario;
+            reg.capitalSocial = receita.capitalSocial;
+          } catch (err) {
+            console.error("Erro ao reconsultar CNPJ", reg.cnpj, err);
+          } finally {
+            processados++;
+            atualizarProgressoLote(processados, total);
+          }
+        }
+
+        salvarNoLocalStorage();
+        renderizarTodos();
+      }
+
+      retryErrorsBtn.addEventListener("click", reconsultarErros);
+
+      // ---------- LIMPAR TABELA ----------
+      clearTableBtn.addEventListener("click", () => {
+        registros = [];
+        salvarNoLocalStorage();
+        renderizarTodos();
+        atualizarProgressoLote(0, 0);
+      });
+
+      // ---------- EXPORTAR PARA EXCEL ----------
+      exportExcelBtn.addEventListener("click", () => {
+        const rows = Array.from(tableBody.querySelectorAll("tr")).filter(
+          (tr) => !tr.classList.contains("no-data-row")
+        );
+
+        if (!rows.length) {
+          alert("Não há dados para exportar.");
+          return;
+        }
+
+        const data = [];
+        data.push([
+          "CNPJ",
+          "Contribuinte",
+          "Situação da Habilitação",
+          "Data da Situação",
+          "Submodalidade",
+          "Razão Social",
+          "Nome Fantasia",
+          "Município (UF)",
+          "Data de Constituição",
+          "Regime Tributário",
+          "Capital Social",
+        ]);
+
+        rows.forEach((tr) => {
+          const tds = tr.querySelectorAll("td");
+          data.push([
+            tds[0].innerText,
+            tds[1].innerText,
+            tds[2].innerText,
+            tds[3].innerText,
+            tds[4].innerText,
+            tds[5].innerText,
+            tds[6].innerText,
+            tds[7].innerText,
+            tds[8].innerText,
+            tds[9].innerText,
+            tds[10].innerText,
+          ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Habilitações");
+
+        XLSX.writeFile(wb, "habilitacoes_comercio_exterior.xlsx");
+      });
+
+      // ---------- CARREGAR DADOS AO ABRIR A PÁGINA ----------
+      window.addEventListener("DOMContentLoaded", () => {
+        registros = carregarDoLocalStorage();
+        renderizarTodos();
+        atualizarProgressoLote(0, 0);
+      });
+    </script>
+  </body>
+</html>

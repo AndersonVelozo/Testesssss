@@ -1,5 +1,5 @@
 // ====== CONFIGURAÇÃO DO BACKEND (AJUSTE QUANDO HOSPEDAR) ======
-const BACKEND_BASE_URL = "http://localhost:3000";
+const BACKEND_BASE_URL = "http://localhost:3000"; // troque depois pelo domínio hospedado
 
 // ---------- ELEMENTOS BÁSICOS ----------
 const cnpjInput = document.getElementById("cnpj");
@@ -21,8 +21,9 @@ const loteProgressBar = document.getElementById("loteProgressBar");
 // ---------- LOCALSTORAGE ----------
 const STORAGE_KEY = "radar_registros_habilitacao";
 
-// agora o registro guarda também os campos da ReceitaWS
-let registros = []; // { cnpj, contribuinte, situacao, dataSituacao, submodalidade, razaoSocial, nomeFantasia, municipioUf, dataConstituicao, regimeTributario, capitalSocial }
+// agora o registro guarda também os campos cadastrais
+// e Município + UF separados
+let registros = []; // { cnpj, contribuinte, situacao, dataSituacao, submodalidade, razaoSocial, nomeFantasia, municipio, uf, dataConstituicao, regimeTributario, capitalSocial }
 
 function salvarNoLocalStorage() {
   try {
@@ -72,7 +73,8 @@ function criarLinhaDOM(registro) {
     <td>${registro.submodalidade || ""}</td>
     <td>${registro.razaoSocial || ""}</td>
     <td>${registro.nomeFantasia || ""}</td>
-    <td>${registro.municipioUf || ""}</td>
+    <td>${registro.municipio || ""}</td>
+    <td>${registro.uf || ""}</td>
     <td>${registro.dataConstituicao || ""}</td>
     <td>${registro.regimeTributario || ""}</td>
     <td>${registro.capitalSocial || ""}</td>
@@ -89,7 +91,8 @@ function adicionarLinhaTabela(
   submodalidade,
   razaoSocial,
   nomeFantasia,
-  municipioUf,
+  municipio,
+  uf,
   dataConstituicao,
   regimeTributario,
   capitalSocial
@@ -104,7 +107,8 @@ function adicionarLinhaTabela(
     submodalidade: submodalidade || "",
     razaoSocial: razaoSocial || "",
     nomeFantasia: nomeFantasia || "",
-    municipioUf: municipioUf || "",
+    municipio: municipio || "",
+    uf: uf || "",
     dataConstituicao: dataConstituicao || "",
     regimeTributario: regimeTributario || "",
     capitalSocial: capitalSocial || "",
@@ -118,7 +122,7 @@ function adicionarLinhaTabela(
 function renderizarTodos() {
   tableBody.innerHTML = `
     <tr class="no-data-row">
-      <td colspan="11" class="no-data">Nenhum registro adicionado ainda</td>
+      <td colspan="12" class="no-data">Nenhum registro adicionado ainda</td>
     </tr>
   `;
 
@@ -224,86 +228,19 @@ async function consultarRadarPorCnpj(cnpj) {
   return data; // { contribuinte, situacao, dataSituacao, submodalidade }
 }
 
-// ReceitaWS (dados cadastrais)
+// ReceitaWS – backend já devolve campos prontos
 async function consultarReceitaWs(cnpj) {
-  const url = `${BACKEND_BASE_URL}/consulta-receitaws?cnpj=${encodeURIComponent(
-    cnpj
-  )}`;
+  const resp = await fetch(
+    `${BACKEND_BASE_URL}/consulta-receitaws?cnpj=${encodeURIComponent(cnpj)}`
+  );
 
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      throw new Error("HTTP " + resp.status);
-    }
-    const d = await resp.json();
-
-    if (d.status && d.status !== "OK") {
-      return {
-        razaoSocial: "",
-        nomeFantasia: "",
-        municipioUf: "",
-        dataConstituicao: "",
-        regimeTributario: "",
-        capitalSocial: "",
-      };
-    }
-
-    const razaoSocial = d.nome || "";
-    const nomeFantasia = d.fantasia || "";
-
-    const municipio = d.municipio || "";
-    const uf = d.uf || "";
-    const municipioUf =
-      municipio && uf ? `${municipio} (${uf})` : municipio || uf || "";
-
-    const dataConstituicao = d.abertura || "";
-
-    let regimeTributario = "";
-    if (d.simples && typeof d.simples.optante === "boolean") {
-      if (d.simples.optante) {
-        regimeTributario = "Simples Nacional";
-        if (d.simples.data_opcao) {
-          regimeTributario += ` desde ${d.simples.data_opcao}`;
-        }
-      } else {
-        regimeTributario = "Regime Normal (Lucro Real ou Presumido)";
-      }
-    }
-
-    let capitalSocial = "";
-    if (d.capital_social) {
-      const num = Number(String(d.capital_social).replace(",", "."));
-      if (!isNaN(num)) {
-        capitalSocial =
-          "R$ " +
-          num.toLocaleString("pt-BR", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          });
-      } else {
-        capitalSocial = `R$ ${d.capital_social}`;
-      }
-    }
-
-    return {
-      razaoSocial,
-      nomeFantasia,
-      municipioUf,
-      dataConstituicao,
-      regimeTributario,
-      capitalSocial,
-    };
-  } catch (err) {
-    console.error("Erro ao consultar ReceitaWS (via backend)", cnpj, err);
-    return {
-      razaoSocial: "",
-      nomeFantasia: "",
-      municipioUf: "",
-      dataConstituicao: "",
-      regimeTributario: "",
-      capitalSocial: "",
-    };
+  if (!resp.ok) {
+    throw new Error("Erro ao consultar backend (ReceitaWS)");
   }
+
+  const dados = await resp.json();
+  console.log("Resposta ReceitaWS backend para", cnpj, dados);
+  return dados;
 }
 
 // ---------- PROCESSAR LOTE ----------
@@ -320,18 +257,24 @@ async function processarLoteCnpjs(cnpjs) {
         consultarReceitaWs(cnpj),
       ]);
 
+      const nomeFantasiaFront =
+        receita.nomeFantasia && receita.nomeFantasia.trim().length > 0
+          ? receita.nomeFantasia.trim()
+          : "Sem nome fantasia";
+
       adicionarLinhaTabela(
         cnpj,
-        radar.contribuinte,
-        radar.situacao,
-        radar.dataSituacao,
-        radar.submodalidade,
-        receita.razaoSocial,
-        receita.nomeFantasia,
-        receita.municipioUf,
-        receita.dataConstituicao,
-        receita.regimeTributario,
-        receita.capitalSocial
+        radar.contribuinte || "",
+        radar.situacao || "",
+        radar.dataSituacao || "",
+        radar.submodalidade || "",
+        receita.razaoSocial || "",
+        nomeFantasiaFront,
+        receita.municipio || "",
+        receita.uf || "",
+        receita.dataConstituicao || "",
+        receita.regimeTributario || "",
+        receita.capitalSocial || ""
       );
     } catch (err) {
       console.error("Erro ao consultar CNPJ", cnpj, err);
@@ -339,6 +282,7 @@ async function processarLoteCnpjs(cnpjs) {
         cnpj,
         "(erro na consulta)",
         "ERRO",
+        "",
         "",
         "",
         "",
@@ -397,8 +341,12 @@ extractAddBtn.addEventListener("click", async () => {
     return;
   }
 
-  // Dados extras (ReceitaWS) via backend
   const extras = await consultarReceitaWs(cnpj);
+
+  const nomeFantasiaFront =
+    extras.nomeFantasia && extras.nomeFantasia.trim().length > 0
+      ? extras.nomeFantasia.trim()
+      : "Sem nome fantasia";
 
   adicionarLinhaTabela(
     cnpj,
@@ -406,12 +354,13 @@ extractAddBtn.addEventListener("click", async () => {
     situacao,
     dataSituacao,
     submodalidade,
-    extras.razaoSocial,
-    extras.nomeFantasia,
-    extras.municipioUf,
-    extras.dataConstituicao,
-    extras.regimeTributario,
-    extras.capitalSocial
+    extras.razaoSocial || "",
+    nomeFantasiaFront,
+    extras.municipio || "",
+    extras.uf || "",
+    extras.dataConstituicao || "",
+    extras.regimeTributario || "",
+    extras.capitalSocial || ""
   );
 
   rawText.value = "";
@@ -448,17 +397,23 @@ async function reconsultarErros() {
         consultarReceitaWs(reg.cnpj),
       ]);
 
-      reg.contribuinte = radar.contribuinte;
-      reg.situacao = radar.situacao;
-      reg.dataSituacao = radar.dataSituacao;
-      reg.submodalidade = radar.submodalidade;
+      reg.contribuinte = radar.contribuinte || "";
+      reg.situacao = radar.situacao || "";
+      reg.dataSituacao = radar.dataSituacao || "";
+      reg.submodalidade = radar.submodalidade || "";
 
-      reg.razaoSocial = receita.razaoSocial;
-      reg.nomeFantasia = receita.nomeFantasia;
-      reg.municipioUf = receita.municipioUf;
-      reg.dataConstituicao = receita.dataConstituicao;
-      reg.regimeTributario = receita.regimeTributario;
-      reg.capitalSocial = receita.capitalSocial;
+      const nomeFantasiaFront =
+        receita.nomeFantasia && receita.nomeFantasia.trim().length > 0
+          ? receita.nomeFantasia.trim()
+          : "Sem nome fantasia";
+
+      reg.razaoSocial = receita.razaoSocial || "";
+      reg.nomeFantasia = nomeFantasiaFront;
+      reg.municipio = receita.municipio || "";
+      reg.uf = receita.uf || "";
+      reg.dataConstituicao = receita.dataConstituicao || "";
+      reg.regimeTributario = receita.regimeTributario || "";
+      reg.capitalSocial = receita.capitalSocial || "";
     } catch (err) {
       console.error("Erro ao reconsultar CNPJ", reg.cnpj, err);
     } finally {
@@ -501,7 +456,8 @@ exportExcelBtn.addEventListener("click", () => {
     "Submodalidade",
     "Razão Social",
     "Nome Fantasia",
-    "Município (UF)",
+    "Município",
+    "UF",
     "Data de Constituição",
     "Regime Tributário",
     "Capital Social",
@@ -521,6 +477,7 @@ exportExcelBtn.addEventListener("click", () => {
       tds[8].innerText,
       tds[9].innerText,
       tds[10].innerText,
+      tds[11].innerText,
     ]);
   });
 

@@ -1,0 +1,388 @@
+/* =============== LAYOUT GERAL =============== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  /* usa altura dinâmica pra mobile também */
+  min-height: 100svh;
+  padding: 24px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  color: #e5e7eb;
+
+  /* Fundo: gradientes + imagem da empresa */
+  background-image: radial-gradient(
+      circle at top,
+      rgba(59, 130, 246, 0.35),
+      transparent 55%
+    ),
+    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.25), transparent 80%),
+    url("./img/quem-pode-se-habilitar-no-radar-descubra-agora-mesmo.webp");
+
+  /* gradientes = auto, imagem = cover (preenche tudo) */
+  background-size: auto, auto, cover;
+
+  /* posição padrão (desktop) – foca mais embaixo pra logo aparecer */
+  background-position: center top, center bottom, center 82%;
+
+  background-repeat: no-repeat, no-repeat, no-repeat;
+  background-attachment: fixed, fixed, fixed;
+
+  background-color: #020617;
+  box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.35);
+}
+
+/* >>> Troque aqui pelo caminho da sua imagem de fundo <<< */
+body {
+  background-image: radial-gradient(
+      circle at top,
+      rgba(59, 130, 246, 0.35),
+      transparent 55%
+    ),
+    radial-gradient(circle at bottom, rgba(16, 185, 129, 0.25), transparent 80%),
+    url("./img/quem-pode-se-habilitar-no-radar-descubra-agora-mesmo.webp");
+}
+
+/* ================== CARTÃO PRINCIPAL ================== */
+
+.container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 28px 28px;
+  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.8); /* fundo embaçado */
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.9), 0 0 0 1px rgba(15, 23, 42, 0.7);
+}
+
+/* ================== TIPOGRAFIA ================== */
+
+h1 {
+  margin: 0 0 6px;
+  font-size: clamp(1.4rem, 2.1vw, 1.8rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #e5e7eb;
+}
+
+.subtitle {
+  color: #9ca3af;
+  margin-bottom: 18px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.subtitle strong {
+  color: #e5e7eb;
+}
+
+/* ================== FORM / CAMPOS ================== */
+
+label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 4px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+input,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  font-size: 0.9rem;
+  color: #e5e7eb;
+  background: rgba(15, 23, 42, 0.9);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease, transform 0.06s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280;
+}
+
+input:focus,
+textarea:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.55);
+  background: rgba(15, 23, 42, 0.98);
+  transform: translateY(-0.5px);
+}
+
+textarea {
+  min-height: 170px;
+  resize: vertical;
+}
+
+/* ================== GRID TOPO ================== */
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 2.1fr);
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+/* ================== BOTÕES ================== */
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+button {
+  border: none;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  transition: transform 0.08s ease, box-shadow 0.12s ease, background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #f9fafb;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.45);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1d4ed8, #4338ca);
+  box-shadow: 0 18px 40px rgba(37, 99, 235, 0.55);
+}
+
+.btn-secondary {
+  background: rgba(30, 64, 175, 0.08);
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.btn-secondary:hover {
+  background: rgba(30, 64, 175, 0.18);
+  border-color: rgba(129, 140, 248, 0.8);
+}
+
+/* ================== PROGRESSO ================== */
+
+.progress-text {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.progress-bar-wrapper {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 999px;
+  overflow: hidden;
+  height: 8px;
+  border: 1px solid rgba(30, 64, 175, 0.8);
+}
+
+.progress-bar-inner {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.7);
+  transition: width 0.2s ease-out;
+}
+
+/* ================== TABELA ================== */
+
+.table-wrapper {
+  max-height: 400px;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(55, 65, 81, 0.8);
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  color: #e5e7eb;
+}
+
+th,
+td {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+  text-align: left;
+}
+
+th {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.98),
+    rgba(17, 24, 39, 0.98)
+  );
+  font-weight: 600;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.82);
+}
+
+tbody tr:hover {
+  background: rgba(30, 64, 175, 0.25);
+}
+
+/* badges de situação */
+
+.tag {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: rgba(22, 163, 74, 0.16);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.5);
+}
+
+.tag.negado {
+  background: rgba(248, 113, 113, 0.16);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.55);
+}
+
+.no-data {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.86rem;
+  padding: 18px 0;
+}
+
+/* ================== RESPONSIVO ================== */
+
+@media (max-width: 1024px) {
+  body {
+    padding: 18px;
+  }
+
+  .container {
+    padding: 20px 20px 22px;
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  textarea {
+    min-height: 150px;
+  }
+}
+
+@media (max-width: 720px) {
+  body {
+    padding: 14px;
+  }
+
+  .container {
+    padding: 18px 14px 20px;
+    border-radius: 16px;
+  }
+
+  .btn-row {
+    flex-direction: column;
+  }
+
+  .btn-row button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .table-wrapper {
+    margin-top: 6px;
+  }
+
+  table {
+    font-size: 0.76rem;
+  }
+
+  th,
+  td {
+    padding: 7px 10px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    text-align: center;
+  }
+
+  .subtitle {
+    text-align: left;
+  }
+}
+
+/* Telas muito largas (ultra-wide) – desce um pouco mais a imagem */
+@media (min-width: 1600px) {
+  body {
+    background-position: center top, center bottom, center 88%;
+  }
+}
+
+/* Notebooks / desktops menores */
+@media (max-width: 1280px) {
+  body {
+    background-position: center top, center bottom, center 80%;
+  }
+}
+
+/* Tablets em pé / celulares grandes */
+@media (max-width: 900px) {
+  body {
+    padding: 18px;
+    background-position: center top, center bottom, center 78%;
+  }
+}
+
+/* Celulares pequenos – foca mais no meio, logo ainda aparece um pedaço */
+@media (max-width: 600px) {
+  body {
+    padding: 14px;
+    background-position: center top, center bottom, center 75%;
+  }
+}

@@ -4,8 +4,8 @@ const isLocalHost =
   window.location.hostname === "127.0.0.1";
 
 const BACKEND_BASE_URL = isLocalHost
-  ? "http://localhost:3000"
-  : "https://radar-backend-omjv.onrender.com";
+  ? "http://localhost:3000" // quando estiver testando local
+  : "https://radar-backend-omjv.onrender.com"; // URL do Render em produção
 
 // ---------- ELEMENTOS BÁSICOS ----------
 const cnpjInput = document.getElementById("cnpj");
@@ -257,33 +257,84 @@ async function processarLoteCnpjs(cnpjs) {
   atualizarProgressoLote(0, total);
 
   for (const cnpj of cnpjs) {
+    let radar = null;
+    let receita = null;
+
     try {
-      const [radar, receita] = await Promise.all([
-        consultarRadarPorCnpj(cnpj),
-        consultarReceitaWs(cnpj),
-      ]);
+      // --- RADAR ---
+      try {
+        radar = await consultarRadarPorCnpj(cnpj);
+        console.log("RADAR lote OK para", cnpj, radar);
+      } catch (e) {
+        console.error("Falha RADAR no lote para", cnpj, e);
+      }
 
-      const nomeFantasiaFront =
-        receita.nomeFantasia && receita.nomeFantasia.trim().length > 0
-          ? receita.nomeFantasia.trim()
-          : "Sem nome fantasia";
+      // --- ReceitaWS ---
+      try {
+        receita = await consultarReceitaWs(cnpj);
+        console.log("ReceitaWS lote OK para", cnpj, receita);
+      } catch (e) {
+        console.error("Falha ReceitaWS no lote para", cnpj, e);
+      }
 
-      adicionarLinhaTabela(
-        cnpj,
-        radar.contribuinte || "",
-        radar.situacao || "",
-        radar.dataSituacao || "",
-        radar.submodalidade || "",
-        receita.razaoSocial || "",
-        nomeFantasiaFront,
-        receita.municipio || "",
-        receita.uf || "",
-        receita.dataConstituicao || "",
-        receita.regimeTributario || "",
-        receita.capitalSocial || ""
-      );
+      // ------- MONTAR CAMPOS DE CADASTRO (Receita) -------
+      let razaoSocial = "";
+      let nomeFantasiaFront = "";
+      let municipio = "";
+      let uf = "";
+      let dataConstituicao = "";
+      let regimeTributario = "";
+      let capitalSocial = "";
+
+      if (receita) {
+        razaoSocial = receita.razaoSocial || "";
+        nomeFantasiaFront =
+          receita.nomeFantasia && receita.nomeFantasia.trim().length > 0
+            ? receita.nomeFantasia.trim()
+            : "Sem nome fantasia";
+        municipio = receita.municipio || "";
+        uf = receita.uf || "";
+        dataConstituicao = receita.dataConstituicao || "";
+        regimeTributario = receita.regimeTributario || "";
+        capitalSocial = receita.capitalSocial || "";
+      }
+
+      // ------- SE ALGUMA COISA DEU CERTO, NÃO É ERRO -------
+      if (radar || receita) {
+        adicionarLinhaTabela(
+          cnpj,
+          radar ? radar.contribuinte || "" : "",
+          radar ? radar.situacao || "" : "",
+          radar ? radar.dataSituacao || "" : "",
+          radar ? radar.submodalidade || "" : "",
+          razaoSocial,
+          nomeFantasiaFront,
+          municipio,
+          uf,
+          dataConstituicao,
+          regimeTributario,
+          capitalSocial
+        );
+      } else {
+        // Nenhuma API respondeu -> aqui sim marcado como ERRO
+        adicionarLinhaTabela(
+          cnpj,
+          "(erro na consulta)",
+          "ERRO",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        );
+      }
     } catch (err) {
-      console.error("Erro ao consultar CNPJ", cnpj, err);
+      console.error("Erro inesperado no lote para", cnpj, err);
+      // fallback: marca como erro
       adicionarLinhaTabela(
         cnpj,
         "(erro na consulta)",
@@ -301,6 +352,9 @@ async function processarLoteCnpjs(cnpjs) {
     } finally {
       processados++;
       atualizarProgressoLote(processados, total);
+
+      // Pequeno delay para não estourar limite da API (ajuste se quiser)
+      await new Promise((resolve) => setTimeout(resolve, 700));
     }
   }
 }
@@ -374,9 +428,16 @@ extractAddBtn.addEventListener("click", async () => {
 
 // ---------- RECONSULTAR ERROS ----------
 async function reconsultarErros() {
+  // Só reconsulta quem realmente continua SEM dados de habilitação
   const erros = registros.filter((r) => {
     const sit = (r.situacao || "").toUpperCase();
-    return sit === "ERRO" || r.contribuinte === "(erro na consulta)";
+    const semDadosHabilitacao =
+      !r.contribuinte && !r.dataSituacao && !r.submodalidade;
+
+    return (
+      (sit === "ERRO" || r.contribuinte === "(erro na consulta)") &&
+      semDadosHabilitacao
+    );
   });
 
   if (!erros.length) {
@@ -398,30 +459,58 @@ async function reconsultarErros() {
 
   for (const reg of erros) {
     try {
-      const [radar, receita] = await Promise.all([
-        consultarRadarPorCnpj(reg.cnpj),
-        consultarReceitaWs(reg.cnpj),
-      ]);
+      let radar = null;
+      let receita = null;
 
-      reg.contribuinte = radar.contribuinte || "";
-      reg.situacao = radar.situacao || "";
-      reg.dataSituacao = radar.dataSituacao || "";
-      reg.submodalidade = radar.submodalidade || "";
+      // --- RADAR ---
+      try {
+        radar = await consultarRadarPorCnpj(reg.cnpj);
+        console.log("RADAR (reconsulta) OK para", reg.cnpj, radar);
+      } catch (e) {
+        console.error("Falha RADAR na reconsulta para", reg.cnpj, e);
+      }
 
-      const nomeFantasiaFront =
-        receita.nomeFantasia && receita.nomeFantasia.trim().length > 0
-          ? receita.nomeFantasia.trim()
-          : "Sem nome fantasia";
+      // --- ReceitaWS ---
+      try {
+        receita = await consultarReceitaWs(reg.cnpj);
+        console.log("ReceitaWS (reconsulta) OK para", reg.cnpj, receita);
+      } catch (e) {
+        console.error("Falha ReceitaWS na reconsulta para", reg.cnpj, e);
+      }
 
-      reg.razaoSocial = receita.razaoSocial || "";
-      reg.nomeFantasia = nomeFantasiaFront;
-      reg.municipio = receita.municipio || "";
-      reg.uf = receita.uf || "";
-      reg.dataConstituicao = receita.dataConstituicao || "";
-      reg.regimeTributario = receita.regimeTributario || "";
-      reg.capitalSocial = receita.capitalSocial || "";
+      // Atualiza campos de habilitação se RADAR respondeu
+      if (radar) {
+        reg.contribuinte = radar.contribuinte || "";
+        reg.situacao = radar.situacao || "";
+        reg.dataSituacao = radar.dataSituacao || "";
+        reg.submodalidade = radar.submodalidade || "";
+      }
+
+      // Atualiza dados cadastrais se Receita respondeu
+      if (receita) {
+        const nomeFantasiaFront =
+          receita.nomeFantasia && receita.nomeFantasia.trim().length > 0
+            ? receita.nomeFantasia.trim()
+            : "Sem nome fantasia";
+
+        reg.razaoSocial = receita.razaoSocial || "";
+        reg.nomeFantasia = nomeFantasiaFront;
+        reg.municipio = receita.municipio || "";
+        reg.uf = receita.uf || "";
+        reg.dataConstituicao = receita.dataConstituicao || "";
+        reg.regimeTributario = receita.regimeTributario || "";
+        reg.capitalSocial = receita.capitalSocial || "";
+      }
+
+      // Se RADAR respondeu, deixa de ser ERRO
+      if (radar) {
+        const sitUpper = (reg.situacao || "").toUpperCase();
+        if (sitUpper === "ERRO") {
+          reg.situacao = radar.situacao || "";
+        }
+      }
     } catch (err) {
-      console.error("Erro ao reconsultar CNPJ", reg.cnpj, err);
+      console.error("Erro inesperado ao reconsultar CNPJ", reg.cnpj, err);
     } finally {
       processados++;
       atualizarProgressoLote(processados, total);

@@ -10,10 +10,15 @@ const PORT = process.env.PORT || 3000;
 const INFOSIMPLES_TOKEN = process.env.API_TOKEN;
 const URL_RADAR = process.env.URL_RADAR;
 
-// CORS – libera para qualquer origem (ajusta depois se quiser travar)
+// ========== CORS ==========
+// Pode deixar assim por enquanto (origem "*") ou, se quiser travar mais:
 app.use(
   cors({
-    origin: "*",
+    origin: [
+      "http://127.0.0.1:5500",
+      "http://localhost:5500",
+      "https://andersonvelozo.github.io",
+    ],
   })
 );
 
@@ -156,7 +161,6 @@ app.get("/consulta-radar", async (req, res) => {
     if (dados) {
       console.log("Dados normalizados RADAR para", cnpj, dados);
 
-      // Ajuste de nomes de campos possíveis na API
       contribuinte =
         dados.contribuinte || dados.nome_contribuinte || dados.contr_nome || "";
 
@@ -192,5 +196,5 @@ app.get("/consulta-radar", async (req, res) => {
 
 // Sobe o servidor
 app.listen(PORT, () => {
-  console.log(`Backend rodando em http://localhost:${PORT}`);
+  console.log(`Backend rodando na porta ${PORT}`);
 });

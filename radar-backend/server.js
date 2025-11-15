@@ -1,5 +1,11 @@
-// ====== CONFIGURAÇÃO DO BACKEND (AJUSTE QUANDO HOSPEDAR) ======
-const BACKEND_BASE_URL = "http://localhost:3000"; // troque depois pelo domínio hospedado
+// ====== CONFIGURAÇÃO DO BACKEND (LOCAL x PRODUÇÃO) ======
+const isLocalHost =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+
+const BACKEND_BASE_URL = isLocalHost
+  ? "http://localhost:3000" // quando você rodar o backend na sua máquina
+  : "https://SEU-BACKEND.onrender.com"; // <<< TROCAR depois pela URL do Render
 
 // ---------- ELEMENTOS BÁSICOS ----------
 const cnpjInput = document.getElementById("cnpj");

@@ -4,8 +4,8 @@ const isLocalHost =
   window.location.hostname === "127.0.0.1";
 
 const BACKEND_BASE_URL = isLocalHost
-  ? "http://localhost:3000" // quando você rodar o backend na sua máquina
-  : "https://SEU-BACKEND.onrender.com"; // <<< TROCAR depois pela URL do Render
+  ? "http://localhost:3000"
+  : "https://radar-backend-omjv.onrender.com";
 
 // ---------- ELEMENTOS BÁSICOS ----------
 const cnpjInput = document.getElementById("cnpj");

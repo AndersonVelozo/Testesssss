@@ -99,6 +99,26 @@
         </button>
       </div>
 
+      <!-- MODAL: Confirmar importação da planilha -->
+      <div id="confirmImportOverlay" class="modal-overlay hidden">
+        <div class="modal-card">
+          <h2 class="modal-title">Importar planilha?</h2>
+          <p id="confirmImportText" class="modal-text">
+            Foram encontrados X CNPJs. Deseja iniciar a consulta em lote (via
+            API)?
+          </p>
+
+          <div class="modal-actions">
+            <button id="cancelImport" class="btn-secondary modal-btn">
+              Cancelar
+            </button>
+            <button id="confirmImport" class="btn-primary modal-btn">
+              Sim, iniciar
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- MODAL: Confirmar limpeza da tabela -->
       <div id="confirmClearOverlay" class="modal-overlay hidden">
         <div class="modal-card">
@@ -175,14 +195,7 @@
         </div>
       </div>
 
-      <div
-        style="
-          max-height: 400px;
-          overflow: auto;
-          border-radius: 8px;
-          border: 1px solid #e5e7eb;
-        "
-      >
+      <div class="table-wrapper">
         <table id="resultTable">
           <thead>
             <tr>

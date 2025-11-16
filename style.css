@@ -277,15 +277,41 @@ tbody tr:hover {
 }
 
 .tag.negado {
-  background: rgba(248, 113, 113, 0.16);
+  background: rgba(248, 113, 113, 0.18);
   color: #fecaca;
   border-color: rgba(248, 113, 113, 0.55);
 
-  padding: 4px 12px; /* Aumenta altura e largura */
-  font-size: 0.76rem; /* Um toque maior para caber melhor */
-  min-height: 22px; /* Garante que não “achate” */
+  padding: 4px 13px; /* aumenta um pouco mais pro texto longo */
+  min-height: 24px; /* mais confortável */
+  font-size: 0.76rem;
+  line-height: 1.2;
   display: inline-flex;
-  align-items: center; /* Centraliza verticalmente */
+  align-items: center;
+}
+
+/* Badge verde (DEFERIDA) */
+.tag.aprovado {
+  background: rgba(74, 222, 128, 0.18);
+  color: #bbf7d0;
+  border-color: rgba(74, 222, 128, 0.55);
+
+  padding: 4px 12px;
+  font-size: 0.76rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+}
+
+.tag.neutro {
+  background: rgba(59, 130, 246, 0.15);
+  color: #bfdbfe;
+  border-color: rgba(59, 130, 246, 0.45);
+
+  padding: 4px 12px;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
 }
 
 .no-data {

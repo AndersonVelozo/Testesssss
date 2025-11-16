@@ -386,3 +386,60 @@ tbody tr:hover {
     background-position: center top, center bottom, center 75%;
   }
 }
+
+/* =============== MODAL DE CONFIRMAÇÃO =============== */
+
+.hidden {
+  display: none !important;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 20px 22px 18px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.95);
+}
+
+.modal-title {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 650;
+  color: #e5e7eb;
+}
+
+.modal-text {
+  margin: 0 0 16px;
+  font-size: 0.86rem;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+.modal-text strong {
+  color: #e5e7eb;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-btn {
+  min-width: 120px;
+  justify-content: center;
+}

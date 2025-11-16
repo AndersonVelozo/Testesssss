@@ -99,6 +99,29 @@
         </button>
       </div>
 
+      <!-- MODAL: Confirmar limpeza da tabela -->
+      <div id="confirmClearOverlay" class="modal-overlay hidden">
+        <div class="modal-card">
+          <h2 class="modal-title">Limpar tabela?</h2>
+          <p class="modal-text">
+            Ao limpar a tabela,
+            <strong>todos os registros exibidos aqui serão apagados</strong>,
+            incluindo os dados salvos no navegador (localStorage). Isso
+            <strong>não afeta a Receita Federal</strong>, apenas o histórico
+            desta tela. Essa ação não pode ser desfeita.
+          </p>
+
+          <div class="modal-actions">
+            <button id="cancelClear" class="btn-secondary modal-btn">
+              Cancelar
+            </button>
+            <button id="confirmClear" class="btn-primary modal-btn">
+              Sim, limpar tudo
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div
         style="
           max-height: 400px;

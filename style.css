@@ -443,3 +443,20 @@ tbody tr:hover {
   min-width: 120px;
   justify-content: center;
 }
+
+/* Lista estilizada dentro do modal */
+.modal-list {
+  margin: 6px 0 14px;
+  padding-left: 18px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.modal-list li {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.modal-list strong {
+  color: #e5e7eb;
+}

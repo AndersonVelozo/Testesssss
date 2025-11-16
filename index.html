@@ -122,6 +122,45 @@
         </div>
       </div>
 
+      <!-- MODAL: Reconsultar erros -->
+      <div id="confirmRetryOverlay" class="modal-overlay hidden">
+        <div class="modal-card">
+          <h2 class="modal-title">Reconsultar erros?</h2>
+
+          <p class="modal-text">
+            Os registros com problemas serão consultados novamente, usando as
+            APIs RADAR e ReceitaWS conforme o tipo de falha:
+          </p>
+
+          <ul class="modal-list">
+            <li>
+              <strong>Sem habilitação e sem cadastro:</strong> RADAR + ReceitaWS
+            </li>
+            <li>
+              <strong>Com cadastro, mas sem habilitação:</strong> apenas RADAR
+            </li>
+            <li>
+              <strong>Com habilitação, mas sem cadastro:</strong> apenas
+              ReceitaWS
+            </li>
+          </ul>
+
+          <p class="modal-text">
+            Este processo pode levar alguns minutos dependendo da quantidade de
+            CNPJs.
+          </p>
+
+          <div class="modal-actions">
+            <button id="cancelRetry" class="btn-secondary modal-btn">
+              Cancelar
+            </button>
+            <button id="confirmRetry" class="btn-primary modal-btn">
+              Sim, reconsultar
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div
         style="
           max-height: 400px;

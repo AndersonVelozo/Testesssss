@@ -276,6 +276,17 @@ tbody tr:hover {
   min-height: 22px;
 }
 
+.tag.indisponivel {
+  background: #b5b5b5;
+  color: #1a1a1a;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .tag.negado {
   background: rgba(248, 113, 113, 0.18);
   color: #fecaca;

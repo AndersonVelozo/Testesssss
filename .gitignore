@@ -1,1 +1,13 @@
+# Arquivos de variáveis de ambiente
 .env
+
+# Pasta de dependências
+node_modules/
+
+# Logs
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Live Server temp
+.vscode/

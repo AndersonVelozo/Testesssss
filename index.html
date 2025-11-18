@@ -97,6 +97,12 @@
         <button type="button" class="btn-secondary" id="retryErrors">
           🔁 Reconsultar erros
         </button>
+        <button type="button" class="btn-secondary" id="retrySelected">
+          🔁 Consultar selecionados
+        </button>
+        <button type="button" class="btn-secondary" id="historyBtn">
+          📆 Consultar histórico
+        </button>
       </div>
 
       <!-- MODAL: Confirmar importação da planilha -->
@@ -199,6 +205,8 @@
         <table id="resultTable">
           <thead>
             <tr>
+              <th>Sel.</th>
+              <th>Data da Consulta</th>
               <th>CNPJ</th>
               <th>Contribuinte</th>
               <th>Situação da Habilitação</th>
@@ -210,12 +218,13 @@
               <th>UF</th>
               <th>Data de Constituição</th>
               <th>Regime Tributário</th>
+              <th>Data Opção Simples</th>
               <th>Capital Social</th>
             </tr>
           </thead>
           <tbody>
             <tr class="no-data-row">
-              <td colspan="12" class="no-data">
+              <td colspan="15" class="no-data">
                 Nenhum registro adicionado ainda
               </td>
             </tr>

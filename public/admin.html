@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Painel Administrativo - RADAR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+
+    <style>
+      /* Remove scroll global */
+      html,
+      body {
+        height: 100%;
+        overflow: hidden !important;
+      }
+
+      body.admin-page {
+        padding: 24px;
+      }
+
+      /* Container premium */
+      .admin-container {
+        height: calc(100vh - 48px);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* Header */
+      .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(148, 163, 184, 0.35);
+        padding: 18px 22px;
+        border-radius: 16px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .admin-title h1 {
+        margin: 0;
+        font-size: 1.45rem;
+      }
+
+      .admin-title p {
+        color: #9ca3af;
+        font-size: 0.85rem;
+        margin-top: 4px;
+      }
+
+      .admin-user-info {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+      }
+
+      /* Badge */
+      .badge-role {
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        border: 1px solid rgba(129, 140, 248, 0.65);
+        background: rgba(129, 140, 248, 0.15);
+        color: #c7d2fe;
+      }
+
+      /* GRID: lado esquerdo form / lado direito tabela */
+      .admin-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 24px;
+        height: 100%;
+      }
+
+      .admin-card {
+        background: rgba(15, 23, 42, 0.62);
+        border: 1px solid rgba(148, 163, 184, 0.32);
+        padding: 24px;
+        border-radius: 18px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(12px);
+        overflow: hidden;
+      }
+
+      .admin-card h2 {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      .admin-card p {
+        margin-top: 6px;
+        margin-bottom: 18px;
+        font-size: 0.85rem;
+        color: #9ca3af;
+      }
+
+      .admin-card-left {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .admin-form {
+        margin-top: 8px;
+      }
+
+      /* Campo de busca */
+      .search-box {
+        width: 100%;
+        margin-bottom: 12px;
+      }
+
+      .search-box input {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.5);
+        background: rgba(15, 23, 42, 0.9);
+        font-size: 0.85rem;
+        color: #fff;
+      }
+
+      /* Tabela com scroll interno */
+      .table-area {
+        height: calc(100% - 70px);
+        overflow-y: auto;
+        border-radius: 14px;
+      }
+
+      .badge {
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+      }
+
+      .badge-admin {
+        background: rgba(129, 140, 248, 0.2);
+        color: #c7d2fe;
+      }
+      .badge-user {
+        background: rgba(59, 130, 246, 0.22);
+        color: #bfdbfe;
+      }
+
+      .badge-ativo {
+        background: rgba(74, 222, 128, 0.22);
+        color: #bbf7d0;
+      }
+      .badge-inativo {
+        background: rgba(248, 113, 113, 0.22);
+        color: #fecaca;
+      }
+
+      .admin-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .btn-sm {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+      }
+
+      /* Responsivo */
+      @media (max-width: 980px) {
+        .admin-grid {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+      }
+
+      /* ====== FORM ADMIN – TOGGLES E BOTÕES PREMIUM ====== */
+
+      /* Linha com PERFIL em cima, STATUS + PERMISSÕES embaixo */
+      .admin-row-3 {
+        display: flex;
+        gap: 16px;
+        margin-top: 18px;
+      }
+
+      .admin-row-sub {
+        display: flex;
+        gap: 48px;
+        margin-top: 14px;
+        align-items: center;
+      }
+
+      .admin-col {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .admin-col.perfil {
+        flex: 0 0 220px;
+      }
+
+      .admin-col.status {
+        flex: 0 0 180px;
+      }
+
+      .admin-col.permissoes {
+        flex: 1;
+      }
+
+      .admin-col label {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      /* Toggle custom */
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        user-select: none;
+        font-size: 0.85rem;
+        color: #e5e7eb;
+      }
+
+      .toggle input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .toggle-track {
+        width: 38px;
+        height: 20px;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.7);
+        display: inline-flex;
+        align-items: center;
+        padding: 2px;
+        box-sizing: border-box;
+        transition: all 0.18s ease-out;
+      }
+
+      .toggle-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #38bdf8, #6366f1);
+        box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8),
+          0 4px 10px rgba(37, 99, 235, 0.55);
+        transform: translateX(0);
+        transition: transform 0.18s ease-out;
+      }
+
+      .toggle input[type="checkbox"]:checked + .toggle-track {
+        background: rgba(59, 130, 246, 0.5);
+        border-color: rgba(129, 140, 248, 0.9);
+      }
+
+      .toggle input[type="checkbox"]:checked + .toggle-track .toggle-thumb {
+        transform: translateX(16px);
+      }
+
+      .toggle-label-text {
+        font-size: 0.84rem;
+        color: #e5e7eb;
+      }
+
+      /* Select PERFIL estilizado */
+      #role {
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.7);
+        background: radial-gradient(
+            circle at top left,
+            rgba(59, 130, 246, 0.25),
+            transparent 55%
+          ),
+          rgba(15, 23, 42, 0.98);
+        padding: 8px 18px;
+        color: #e5e7eb;
+        font-size: 0.85rem;
+        outline: none;
+        appearance: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease,
+          background 0.15s ease;
+      }
+
+      #role:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.55);
+      }
+
+      #role:hover {
+        border-color: rgba(129, 140, 248, 0.9);
+      }
+
+      /* Botões centralizados */
+      .admin-btn-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 18px;
+        margin-top: 26px;
+        margin-bottom: 10px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #4f7cff, #3162ff);
+        color: #fff;
+        font-weight: 600;
+        border: none;
+        padding: 12px 34px;
+        border-radius: 50px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        box-shadow: 0 0 18px rgba(79, 124, 255, 0.55);
+        transition: 0.2s ease;
+      }
+
+      .btn-primary:hover {
+        background: linear-gradient(135deg, #6f94ff, #3e6bff);
+        transform: translateY(-2px);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: #d1d5db;
+        font-weight: 500;
+        padding: 12px 34px;
+        border-radius: 50px;
+        border: 1px solid rgba(140, 140, 255, 0.4);
+        cursor: pointer;
+        font-size: 0.93rem;
+        transition: 0.2s ease;
+      }
+
+      .btn-secondary:hover {
+        border-color: rgba(200, 200, 255, 0.8);
+        color: #fff;
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-2px);
+      }
+
+      .admin-btn-row .btn-primary,
+      .admin-btn-row .btn-secondary {
+        border-radius: 999px;
+        padding: 10px 22px;
+        font-size: 0.9rem;
+      }
+
+      #formMsg {
+        margin-top: 8px;
+      }
+    </style>
+  </head>
+
+  <body class="admin-page">
+    <div class="admin-container">
+      <!-- HEADER -->
+      <header class="admin-header">
+        <div class="admin-title">
+          <h1>Painel Administrativo</h1>
+          <p>Gerencie usuários, permissões e acesso.</p>
+        </div>
+
+        <div class="admin-user-info">
+          <div id="adminUserName">Admin</div>
+          <div><span class="badge-role" id="adminUserRole">admin</span></div>
+          <button
+            id="logoutBtn"
+            class="btn-secondary"
+            style="padding: 6px 14px"
+          >
+            Sair
+          </button>
+        </div>
+      </header>
+
+      <!-- GRID -->
+      <div class="admin-grid">
+        <!-- ESQUERDA – FORM -->
+        <section class="admin-card admin-card-left">
+          <h2>Cadastro / Edição de usuário</h2>
+          <p>
+            Preencha os dados abaixo para criar um novo usuário ou editar um
+            existente.
+          </p>
+
+          <form id="userForm" class="admin-form" autocomplete="off">
+            <input type="hidden" id="userId" />
+
+            <label for="nome">Nome</label>
+            <input id="nome" type="text" placeholder="Nome completo" required />
+
+            <label for="email" style="margin-top: 8px">E-mail</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="usuario@empresa.com"
+              required
+            />
+
+            <label for="senha" style="margin-top: 8px">Senha</label>
+            <input id="senha" type="password" placeholder="••••••••" />
+
+            <!-- PERFIL -->
+            <div class="admin-row-3">
+              <div class="admin-col perfil">
+                <label for="role">Perfil</label>
+                <select id="role">
+                  <option value="user">Usuário</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- STATUS + PERMISSÕES -->
+            <div class="admin-row-sub">
+              <div class="admin-col status">
+                <label>Status</label>
+                <label class="toggle">
+                  <input type="checkbox" id="ativo" checked />
+                  <span class="toggle-track">
+                    <span class="toggle-thumb"></span>
+                  </span>
+                  <span class="toggle-label-text">Ativo</span>
+                </label>
+              </div>
+
+              <div class="admin-col permissoes">
+                <label>Permissões</label>
+                <label class="toggle">
+                  <input type="checkbox" id="podeLote" checked />
+                  <span class="toggle-track">
+                    <span class="toggle-thumb"></span>
+                  </span>
+                  <span class="toggle-label-text">
+                    Pode usar consulta em lote (planilha)
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- BOTÕES -->
+            <div class="admin-btn-row">
+              <button type="submit" class="btn-primary" id="salvarBtn">
+                💾 Salvar
+              </button>
+
+              <button type="button" class="btn-secondary" id="limparFormBtn">
+                🧹 Limpar
+              </button>
+            </div>
+
+            <div id="formMsg" class="progress-text"></div>
+          </form>
+        </section>
+
+        <!-- DIREITA – TABELA -->
+        <section class="admin-card">
+          <h2>Usuários cadastrados</h2>
+
+          <div class="search-box">
+            <input
+              type="text"
+              id="buscaUsuario"
+              placeholder="Pesquisar por nome ou e-mail..."
+            />
+          </div>
+
+          <div class="table-area">
+            <table id="usersTable">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>E-mail</th>
+                  <th>Perfil</th>
+                  <th>Lote</th>
+                  <th>Status</th>
+                  <th style="min-width: 140px">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="no-data-row">
+                  <td colspan="6" class="no-data">
+                    Nenhum usuário cadastrado.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      /* ----------------------------------
+      CONFIG & HELPERS
+---------------------------------- */
+
+      const isLocalHost =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+
+      const BACKEND_BASE_URL = isLocalHost
+        ? "http://localhost:3000"
+        : "https://radar-backend-omjv.onrender.com";
+
+      function getToken() {
+        return localStorage.getItem("authToken") || "";
+      }
+
+      /* ----------------------------------
+      ELEMENTOS
+---------------------------------- */
+
+      const adminUserNameEl = document.getElementById("adminUserName");
+      const adminUserRoleEl = document.getElementById("adminUserRole");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      const userForm = document.getElementById("userForm");
+      const userIdInput = document.getElementById("userId");
+      const nomeInput = document.getElementById("nome");
+      const emailInput = document.getElementById("email");
+      const senhaInput = document.getElementById("senha");
+      const roleSelect = document.getElementById("role");
+      const ativoCheckbox = document.getElementById("ativo");
+      const podeLoteCheckbox = document.getElementById("podeLote");
+      const salvarBtn = document.getElementById("salvarBtn");
+      const limparFormBtn = document.getElementById("limparFormBtn");
+      const formMsg = document.getElementById("formMsg");
+
+      const usersTableBody = document.querySelector("#usersTable tbody");
+
+      let usuarios = [];
+
+      /* ----------------------------------
+      PROTEÇÃO DE ROTA
+---------------------------------- */
+
+      (function proteger() {
+        const token = getToken();
+        const nome = localStorage.getItem("usuarioNome") || "Administrador";
+        const role = localStorage.getItem("usuarioRole") || "user";
+
+        if (!token) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        if (role !== "admin") {
+          window.location.href = "index.html";
+          return;
+        }
+
+        adminUserNameEl.textContent = nome;
+        adminUserRoleEl.textContent = role;
+      })();
+
+      /* ----------------------------------
+      LOGOUT
+---------------------------------- */
+
+      logoutBtn.onclick = () => {
+        localStorage.clear();
+        window.location.href = "login.html";
+      };
+
+      /* ----------------------------------
+      MSG FORM
+---------------------------------- */
+
+      function setFormMessage(msg, err = false) {
+        formMsg.textContent = msg || "";
+        formMsg.style.color = err ? "#fca5a5" : "#9ca3af";
+      }
+
+      /* ----------------------------------
+      LIMPAR
+---------------------------------- */
+
+      function limparFormulario() {
+        userIdInput.value = "";
+        nomeInput.value = "";
+        emailInput.value = "";
+        senhaInput.value = "";
+        roleSelect.value = "user";
+        ativoCheckbox.checked = true;
+        podeLoteCheckbox.checked = true;
+        salvarBtn.textContent = "💾 Salvar";
+        setFormMessage("");
+      }
+
+      limparFormBtn.onclick = limparFormulario;
+
+      /* ----------------------------------
+      RENDERIZAR USUÁRIOS
+---------------------------------- */
+
+      function renderizarUsuarios() {
+        usersTableBody.innerHTML = "";
+
+        if (!usuarios.length) {
+          usersTableBody.innerHTML = `
+            <tr class="no-data-row">
+              <td colspan="6" class="no-data">Nenhum usuário cadastrado.</td>
+            </tr>`;
+          return;
+        }
+
+        usuarios.forEach((u) => {
+          const tr = document.createElement("tr");
+
+          tr.dataset.nome = (u.nome || "").toLowerCase();
+          tr.dataset.email = (u.email || "").toLowerCase();
+
+          tr.innerHTML = `
+            <td>${u.nome || ""}</td>
+            <td>${u.email || ""}</td>
+
+            <td>
+              <span class="badge ${
+                u.role === "admin" ? "badge-admin" : "badge-user"
+              }">
+                ${u.role}
+              </span>
+            </td>
+
+            <td>
+              <input type="checkbox" class="toggle-lote" data-id="${u.id}" ${
+            u.pode_lote ? "checked" : ""
+          }>
+            </td>
+
+            <td>
+              <span class="badge ${u.ativo ? "badge-ativo" : "badge-inativo"}">
+                ${u.ativo ? "Ativo" : "Inativo"}
+              </span>
+            </td>
+
+            <td>
+              <div class="admin-actions">
+                <button class="btn-secondary btn-sm edit-user" data-id="${
+                  u.id
+                }">Editar</button>
+                <button class="btn-secondary btn-sm delete-user" data-id="${
+                  u.id
+                }">Excluir</button>
+              </div>
+            </td>
+          `;
+
+          usersTableBody.appendChild(tr);
+        });
+      }
+
+      /* ----------------------------------
+      BUSCA
+---------------------------------- */
+
+      document.getElementById("buscaUsuario").addEventListener("input", (e) => {
+        const termo = e.target.value.toLowerCase();
+
+        document.querySelectorAll("#usersTable tbody tr").forEach((linha) => {
+          const nome = linha.dataset.nome || "";
+          const email = linha.dataset.email || "";
+
+          linha.style.display =
+            nome.includes(termo) || email.includes(termo) ? "" : "none";
+        });
+      });
+
+      /* ----------------------------------
+      CARREGAR USUÁRIOS
+---------------------------------- */
+
+      async function carregarUsuarios() {
+        try {
+          const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios`, {
+            headers: {
+              Authorization: "Bearer " + getToken(),
+            },
+          });
+
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            console.error("Erro GET /admin/usuarios:", data);
+            throw new Error(data.error || "Erro ao buscar usuários");
+          }
+
+          usuarios = Array.isArray(data) ? data : [];
+          renderizarUsuarios();
+        } catch (err) {
+          console.error(err);
+          setFormMessage("Erro ao carregar usuários.", true);
+        }
+      }
+
+      /* ----------------------------------
+      SALVAR (CRIAR / EDITAR)
+---------------------------------- */
+
+      userForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const id = userIdInput.value || null;
+        const nome = nomeInput.value.trim();
+        const email = emailInput.value.trim();
+        const senha = senhaInput.value.trim();
+
+        if (!nome || !email) {
+          setFormMessage("Nome e e-mail são obrigatórios.", true);
+          return;
+        }
+
+        if (!id && !senha) {
+          setFormMessage("Senha obrigatória para novo usuário.", true);
+          return;
+        }
+
+        const payload = {
+          nome,
+          email,
+          role: roleSelect.value,
+          ativo: !!ativoCheckbox.checked,
+          pode_lote: !!podeLoteCheckbox.checked, // *** IMPORTANTE: mesmo nome do backend ***
+        };
+
+        if (senha) {
+          payload.senha = senha;
+        }
+
+        salvarBtn.disabled = true;
+        setFormMessage("Salvando usuário...");
+
+        try {
+          const url = id
+            ? `${BACKEND_BASE_URL}/admin/usuarios/${id}`
+            : `${BACKEND_BASE_URL}/admin/usuarios`;
+
+          const method = id ? "PUT" : "POST";
+
+          const resp = await fetch(url, {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + getToken(),
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            console.error("Erro salvar usuário:", data);
+            setFormMessage(
+              data.error || "Não foi possível salvar o usuário.",
+              true
+            );
+          } else {
+            setFormMessage(
+              id ? "Usuário atualizado com sucesso." : "Usuário criado!"
+            );
+            limparFormulario();
+            await carregarUsuarios();
+          }
+        } catch (err) {
+          console.error(err);
+          setFormMessage("Erro inesperado ao salvar usuário.", true);
+        } finally {
+          salvarBtn.disabled = false;
+        }
+      });
+
+      /* ----------------------------------
+      EDITAR / EXCLUIR / TOGGLE LOTE
+---------------------------------- */
+
+      usersTableBody.addEventListener("click", async (e) => {
+        const btn = e.target;
+
+        // EDITAR
+        if (btn.classList.contains("edit-user")) {
+          const id = btn.dataset.id;
+          const u = usuarios.find((x) => String(x.id) === String(id));
+          if (!u) return;
+
+          userIdInput.value = u.id;
+          nomeInput.value = u.nome || "";
+          emailInput.value = u.email || "";
+          senhaInput.value = "";
+          roleSelect.value = u.role || "user";
+          ativoCheckbox.checked = !!u.ativo;
+          podeLoteCheckbox.checked = !!u.pode_lote;
+
+          salvarBtn.textContent = "Atualizar";
+          setFormMessage("Editando usuário...");
+        }
+
+        // EXCLUIR
+        if (btn.classList.contains("delete-user")) {
+          const id = btn.dataset.id;
+          if (!confirm("Excluir este usuário?")) return;
+
+          try {
+            const resp = await fetch(
+              `${BACKEND_BASE_URL}/admin/usuarios/${id}`,
+              {
+                method: "DELETE",
+                headers: {
+                  Authorization: "Bearer " + getToken(),
+                },
+              }
+            );
+
+            const data = await resp.json().catch(() => ({}));
+
+            if (!resp.ok) {
+              console.error("Erro excluir usuário:", data);
+              setFormMessage(data.error || "Erro ao excluir usuário.", true);
+            } else {
+              setFormMessage("Usuário excluído.");
+              await carregarUsuarios();
+            }
+          } catch (err) {
+            console.error(err);
+            setFormMessage("Erro ao excluir usuário.", true);
+          }
+        }
+      });
+
+      // Toggle direto da tabela (pode_lote)
+      usersTableBody.addEventListener("change", async (e) => {
+        const input = e.target;
+        if (!input.classList.contains("toggle-lote")) return;
+
+        const id = input.dataset.id;
+        const novoValor = !!input.checked;
+
+        try {
+          const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + getToken(),
+            },
+            body: JSON.stringify({ pode_lote: novoValor }),
+          });
+
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            console.error("Erro atualizar lote:", data);
+            setFormMessage(
+              data.error || "Erro ao atualizar permissão de lote.",
+              true
+            );
+            await carregarUsuarios();
+          } else {
+            await carregarUsuarios();
+          }
+        } catch (err) {
+          console.error(err);
+          setFormMessage("Erro ao atualizar permissão de lote.", true);
+          await carregarUsuarios();
+        }
+      });
+
+      /* ----------------------------------
+      INICIALIZAR
+---------------------------------- */
+
+      window.onload = carregarUsuarios;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Login - RADAR</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container" style="max-width: 420px">
+      <h1>Login</h1>
+      <p class="subtitle">
+        Acesso restrito. Somente usuários cadastrados pelo administrador.
+      </p>
+
+      <label for="email">E-mail</label>
+      <input id="email" type="email" placeholder="voce@empresa.com" />
+
+      <label for="senha" style="margin-top: 12px">Senha</label>
+      <input id="senha" type="password" placeholder="********" />
+
+      <div class="btn-row" style="margin-top: 16px">
+        <button id="loginBtn" class="btn-primary" type="button">Entrar</button>
+      </div>
+
+      <div id="loginMsg" class="progress-text"></div>
+    </div>
+
+    <script>
+      // backend e front agora estão no MESMO host (localhost:3000)
+      const BACKEND_BASE_URL = window.location.origin;
+
+      const emailInput = document.getElementById("email");
+      const senhaInput = document.getElementById("senha");
+      const loginBtn = document.getElementById("loginBtn");
+      const loginMsg = document.getElementById("loginMsg");
+
+      async function fazerLogin() {
+        const email = emailInput.value.trim();
+        const senha = senhaInput.value.trim();
+
+        if (!email || !senha) {
+          loginMsg.textContent = "Informe e-mail e senha.";
+          return;
+        }
+
+        loginBtn.disabled = true;
+        loginMsg.textContent = "Autenticando...";
+
+        try {
+          const resp = await fetch(`${BACKEND_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ email, senha }),
+          });
+
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            loginMsg.textContent = err.error || "Usuário ou senha inválidos.";
+            loginBtn.disabled = false;
+            return;
+          }
+
+          const data = await resp.json();
+          const usuario = data.usuario || {};
+
+          // salva token e dados básicos do usuário
+          localStorage.setItem("authToken", data.token);
+          localStorage.setItem("usuarioNome", usuario.nome || "");
+          localStorage.setItem("usuarioRole", usuario.role || "user");
+
+          loginMsg.textContent =
+            "Login realizado com sucesso! Redirecionando...";
+
+          // se for admin -> painel admin, senão -> tela principal
+          const destino =
+            (usuario.role || "").toLowerCase() === "admin"
+              ? "admin.html"
+              : "index.html";
+
+          setTimeout(() => {
+            window.location.href = destino;
+          }, 800);
+        } catch (e) {
+          console.error(e);
+          loginMsg.textContent = "Erro ao conectar com o servidor.";
+          loginBtn.disabled = false;
+        }
+      }
+
+      loginBtn.addEventListener("click", fazerLogin);
+
+      // Enter também faz login
+      senhaInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          fazerLogin();
+        }
+      });
+      emailInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          fazerLogin();
+        }
+      });
+    </script>
+  </body>
+</html>

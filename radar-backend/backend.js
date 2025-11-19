@@ -1,9 +1,10 @@
-// backend.js (Node/Express + Postgres + Cache 90 dias)
+// backend.js (Node/Express + Postgres + Cache 90 dias + Auth + Logs + Painel ADM)
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const fetch = require("node-fetch"); // versão 2 (CommonJS)
 const { Pool } = require("pg");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 
@@ -12,6 +13,12 @@ const PORT = process.env.PORT || 3000;
 const INFOSIMPLES_TOKEN = process.env.API_TOKEN;
 const URL_RADAR = process.env.URL_RADAR;
 const CACHE_DIAS = Number(process.env.CACHE_DIAS || 90);
+const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-mude-isso";
+
+const path = require("path");
+
+// Servir arquivos estáticos do front-end
+app.use(express.static(path.join(__dirname, "../public")));
 
 // ========== POSTGRES ==========
 const pool = new Pool({
@@ -22,7 +29,7 @@ const pool = new Pool({
   database: process.env.PGDATABASE,
 });
 
-// cria tabela se não existir
+// cria tabelas se não existir + coluna extra do painel ADM
 async function initDb() {
   const sql = `
     CREATE TABLE IF NOT EXISTS consultas_radar (
@@ -45,9 +52,83 @@ async function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_consultas_radar_cnpj_data
       ON consultas_radar (cnpj, data_consulta DESC);
+
+    CREATE TABLE IF NOT EXISTS usuarios (
+      id           BIGSERIAL PRIMARY KEY,
+      nome         TEXT         NOT NULL,
+      email        VARCHAR(120) NOT NULL UNIQUE,
+      senha_hash   TEXT         NOT NULL,
+      role         VARCHAR(20)  NOT NULL DEFAULT 'user',
+      ativo        BOOLEAN      NOT NULL DEFAULT TRUE,
+      criado_em    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS consultas_log (
+      id           BIGSERIAL PRIMARY KEY,
+      usuario_id   BIGINT      NOT NULL REFERENCES usuarios(id),
+      cnpj         VARCHAR(14) NOT NULL,
+      data_hora    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      origem       VARCHAR(20) NOT NULL,
+      sucesso      BOOLEAN     NOT NULL,
+      mensagem     TEXT
+    );
+
+    ALTER TABLE usuarios
+      ADD COLUMN IF NOT EXISTS pode_lote BOOLEAN NOT NULL DEFAULT TRUE;
+
+    -- 🔧 patch: se existir coluna 'senha' antiga NOT NULL, tornamos NULL
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'usuarios'
+          AND column_name = 'senha'
+      ) THEN
+        BEGIN
+          ALTER TABLE usuarios ALTER COLUMN senha DROP NOT NULL;
+        EXCEPTION WHEN undefined_column THEN
+          -- se não existir mais, ignoramos
+          NULL;
+        END;
+      END IF;
+    END $$;
   `;
+
   await pool.query(sql);
-  console.log("✔ Tabela consultas_radar verificada/criada.");
+  console.log("✔ Tabelas verificadas/criadas.");
+
+  await seedAdminUser();
+}
+
+// cria admin padrão se tabela estiver vazia
+async function seedAdminUser() {
+  try {
+    const { rows } = await pool.query(
+      "SELECT COUNT(*) AS total FROM usuarios;"
+    );
+    const total = Number(rows[0]?.total || 0);
+
+    if (total === 0) {
+      const nome = "Administrador";
+      const email = "admin@radar.local";
+      const senhaEmTexto = "admin123"; // TROQUE ISSO ASSIM QUE LOGAR
+      const role = "admin";
+
+      const sql = `
+        INSERT INTO usuarios (nome, email, senha_hash, role, ativo, pode_lote)
+        VALUES ($1, $2, $3, $4, TRUE, TRUE)
+        ON CONFLICT (email) DO NOTHING;
+      `;
+
+      await pool.query(sql, [nome, email, senhaEmTexto, role]);
+      console.log("⚙ Usuário ADMIN criado:");
+      console.log(`   Email: ${email}`);
+      console.log(`   Senha: ${senhaEmTexto}`);
+      console.log("   >> Altere depois pelo painel ADM.");
+    }
+  } catch (err) {
+    console.error("Erro ao criar admin padrão:", err.message);
+  }
 }
 
 // busca consulta recente (dentro do CACHE_DIAS)
@@ -108,7 +189,7 @@ async function salvarConsulta(cnpjLimpo, dados) {
   return rows[0];
 }
 
-// apaga tudo que tiver mais de 90 dias
+// apaga tudo que tiver mais de CACHE_DIAS dias
 async function limparConsultasAntigas() {
   const sql = `
     DELETE FROM consultas_radar
@@ -120,21 +201,30 @@ async function limparConsultasAntigas() {
   }
 }
 
-// ========== CORS ==========
-app.use(
-  cors({
-    origin: [
-      "http://127.0.0.1:5500",
-      "http://localhost:5500",
-      "https://andersonvelozo.github.io",
-    ],
-  })
-);
-
-// só pra testar rápido no navegador
-app.get("/", (req, res) => {
-  res.json({ ok: true, msg: "Backend RADAR/ReceitaWS rodando" });
-});
+// ========== LOG DE CONSULTAS ==========
+async function registrarLogConsulta(
+  usuarioId,
+  cnpj,
+  origem,
+  sucesso,
+  mensagem
+) {
+  try {
+    const sql = `
+      INSERT INTO consultas_log (usuario_id, cnpj, origem, sucesso, mensagem)
+      VALUES ($1, $2, $3, $4, $5);
+    `;
+    await pool.query(sql, [
+      usuarioId,
+      cnpj,
+      origem || "desconhecida",
+      !!sucesso,
+      mensagem || null,
+    ]);
+  } catch (err) {
+    console.error("Erro ao registrar log de consulta:", err.message);
+  }
+}
 
 // ========== HELPERS GERAIS ==========
 function normalizarCNPJ(v) {
@@ -156,7 +246,69 @@ function formatarCapitalSocial(valorBruto) {
   return `R$ ${valorBruto}`;
 }
 
-// ================= RECEITAWS (APENAS DADOS) =================
+// ========== MIDDLEWARES ==========
+
+// body JSON
+app.use(express.json());
+
+// CORS
+app.use(
+  cors({
+    origin: [
+      "http://127.0.0.1:5500",
+      "http://localhost:5500",
+      "https://andersonvelozo.github.io",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// Middleware de autenticação (qualquer usuário logado)
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) {
+    return res.status(401).json({ error: "Token não informado" });
+  }
+
+  const [tipo, token] = authHeader.split(" ");
+  if (tipo !== "Bearer" || !token) {
+    return res.status(401).json({ error: "Formato de token inválido" });
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = {
+      id: payload.id,
+      nome: payload.nome,
+      email: payload.email,
+      role: payload.role,
+    };
+    next();
+  } catch (err) {
+    console.error("Erro ao verificar token:", err.message);
+    return res.status(401).json({ error: "Token inválido ou expirado" });
+  }
+}
+
+// Middleware específico para rotas ADM
+function authMiddlewareAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: "Não autenticado" });
+  }
+  if (req.user.role !== "admin") {
+    return res.status(403).json({ error: "Acesso restrito ao administrador" });
+  }
+  next();
+}
+
+// ========== ENDPOINT BÁSICO ==========
+app.get("/", (req, res) => {
+  res.json({ ok: true, msg: "Backend RADAR/ReceitaWS rodando" });
+});
+
+// ========== FUNÇÕES DE API (ReceitaWS / Radar) ==========
+
 async function consultaReceitaWsAPI(cnpjLimpo) {
   const url = `https://www.receitaws.com.br/v1/CNPJ/${cnpjLimpo}`;
   const resp = await fetch(url);
@@ -173,13 +325,10 @@ async function consultaReceitaWsAPI(cnpjLimpo) {
 
   const razaoSocial = d.nome || "";
   const nomeFantasia = d.fantasia || "";
-
   const municipio = d.municipio || "";
   const uf = d.uf || "";
-
   const dataConstituicao = d.abertura || "";
 
-  // *** Regime + data opção simples SEPARADOS ***
   let regimeTributario = "";
   let dataOpcaoSimples = "N/A";
 
@@ -211,7 +360,6 @@ async function consultaReceitaWsAPI(cnpjLimpo) {
   };
 }
 
-// ================= RADAR / INFOSIMPLES (APENAS DADOS) =================
 async function consultaRadarAPI(cnpjLimpo) {
   if (!INFOSIMPLES_TOKEN || !URL_RADAR) {
     throw new Error(
@@ -284,7 +432,7 @@ async function consultaRadarAPI(cnpjLimpo) {
   };
 }
 
-// ================= ENDPOINTS ORIGINAIS (opcionalmente mantidos) =================
+// ================= ENDPOINTS AUXILIARES (sem auth, se quiser manter) =================
 
 app.get("/consulta-receitaws", async (req, res) => {
   try {
@@ -314,29 +462,308 @@ app.get("/consulta-radar", async (req, res) => {
   }
 });
 
-// ================= NOVO ENDPOINT UNIFICADO + CACHE POSTGRES =================
+// ================== AUTH ==================
+// Login em modo SENHA SIMPLES (SEM BCRYPT)
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { email, senha } = req.body || {};
+
+    console.log(">>> Tentativa login");
+    console.log("Email:", email);
+    console.log("Senha recebida:", senha);
+
+    if (!email || !senha) {
+      return res.status(400).json({ error: "Informe email e senha." });
+    }
+
+    const sql = `SELECT * FROM usuarios WHERE email = $1 AND ativo = TRUE`;
+    const { rows } = await pool.query(sql, [email]);
+    const user = rows[0];
+
+    if (!user) {
+      console.log("Usuário não encontrado no banco");
+      return res.status(401).json({ error: "Usuário ou senha inválidos." });
+    }
+
+    console.log("Senha no banco:", user.senha_hash);
+
+    // Comparação simples
+    if (String(user.senha_hash).trim() !== String(senha).trim()) {
+      console.log("Senha incorreta!");
+      return res.status(401).json({ error: "Usuário ou senha inválidos." });
+    }
+
+    console.log(">>> LOGIN OK para:", user.email);
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        role: user.role,
+      },
+      JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+
+    return res.json({
+      token,
+      usuario: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error("Erro /auth/login:", err);
+    return res.status(500).json({ error: "Erro no login" });
+  }
+});
+
+// endpoint só pra testar token
+app.get("/auth/me", authMiddleware, (req, res) => {
+  res.json({ usuario: req.user });
+});
+
+// ================= PAINEL ADMIN – CRUD USUÁRIOS =================
+
+// Listar todos os usuários (somente ADM)
+app.get(
+  "/admin/usuarios",
+  authMiddleware,
+  authMiddlewareAdmin,
+  async (req, res) => {
+    try {
+      const sql = `
+      SELECT id, nome, email, role, ativo, pode_lote, criado_em
+      FROM usuarios
+      ORDER BY id ASC;
+    `;
+      const { rows } = await pool.query(sql);
+      res.json(rows);
+    } catch (err) {
+      console.error("Erro GET /admin/usuarios:", err);
+      res.status(500).json({ error: "Erro ao listar usuários" });
+    }
+  }
+);
+
+// Criar usuário (somente ADM)
+app.post(
+  "/admin/usuarios",
+  authMiddleware,
+  authMiddlewareAdmin,
+  async (req, res) => {
+    try {
+      const { nome, email, senha, role, ativo, pode_lote } = req.body || {};
+
+      if (!nome || !email || !senha) {
+        return res
+          .status(400)
+          .json({ error: "Nome, e-mail e senha são obrigatórios." });
+      }
+
+      const roleFinal = role === "admin" ? "admin" : "user";
+      const ativoFinal = typeof ativo === "boolean" ? ativo : true;
+      const podeLoteFinal = typeof pode_lote === "boolean" ? pode_lote : true;
+
+      const sql = `
+      INSERT INTO usuarios (nome, email, senha_hash, role, ativo, pode_lote)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, nome, email, role, ativo, pode_lote, criado_em;
+    `;
+
+      const { rows } = await pool.query(sql, [
+        nome,
+        email,
+        senha, // texto simples
+        roleFinal,
+        ativoFinal,
+        podeLoteFinal,
+      ]);
+
+      res.status(201).json(rows[0]);
+    } catch (err) {
+      console.error("Erro POST /admin/usuarios:", err);
+      if (err.code === "23505") {
+        return res
+          .status(400)
+          .json({ error: "Já existe um usuário com esse e-mail." });
+      }
+      res.status(500).json({ error: "Erro ao criar usuário" });
+    }
+  }
+);
+
+// Atualizar usuário (somente ADM)
+app.put(
+  "/admin/usuarios/:id",
+  authMiddleware,
+  authMiddlewareAdmin,
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (!id) {
+        return res.status(400).json({ error: "ID inválido." });
+      }
+
+      const { nome, email, senha, role, ativo, pode_lote } = req.body || {};
+
+      const campos = [];
+      const valores = [];
+      let idx = 1;
+
+      if (nome !== undefined) {
+        campos.push(`nome = $${idx++}`);
+        valores.push(nome);
+      }
+      if (email !== undefined) {
+        campos.push(`email = $${idx++}`);
+        valores.push(email);
+      }
+      if (senha !== undefined && senha !== "") {
+        campos.push(`senha_hash = $${idx++}`);
+        valores.push(senha); // texto simples
+      }
+      if (role !== undefined) {
+        const roleFinal = role === "admin" ? "admin" : "user";
+        campos.push(`role = $${idx++}`);
+        valores.push(roleFinal);
+      }
+      if (typeof ativo === "boolean") {
+        campos.push(`ativo = $${idx++}`);
+        valores.push(ativo);
+      }
+      if (typeof pode_lote === "boolean") {
+        campos.push(`pode_lote = $${idx++}`);
+        valores.push(pode_lote);
+      }
+
+      if (!campos.length) {
+        return res
+          .status(400)
+          .json({ error: "Nenhum campo informado para atualização." });
+      }
+
+      valores.push(id);
+      const sql = `
+        UPDATE usuarios
+        SET ${campos.join(", ")}
+        WHERE id = $${idx}
+        RETURNING id, nome, email, role, ativo, pode_lote, criado_em;
+      `;
+
+      const { rows } = await pool.query(sql, valores);
+      const user = rows[0];
+
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado." });
+      }
+
+      res.json(user);
+    } catch (err) {
+      console.error("Erro PUT /admin/usuarios/:id:", err);
+      if (err.code === "23505") {
+        return res
+          .status(400)
+          .json({ error: "Já existe um usuário com esse e-mail." });
+      }
+      res.status(500).json({ error: "Erro ao atualizar usuário" });
+    }
+  }
+);
+
+// "Excluir" usuário (desativar) – somente ADM
+app.delete(
+  "/admin/usuarios/:id",
+  authMiddleware,
+  authMiddlewareAdmin,
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (!id) {
+        return res.status(400).json({ error: "ID inválido." });
+      }
+
+      const sql = `
+        UPDATE usuarios
+        SET ativo = FALSE
+        WHERE id = $1
+        RETURNING id, nome, email, role, ativo, pode_lote, criado_em;
+      `;
+
+      const { rows } = await pool.query(sql, [id]);
+      const user = rows[0];
+
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado." });
+      }
+
+      res.json({
+        message: "Usuário desativado com sucesso.",
+        usuario: user,
+      });
+    } catch (err) {
+      console.error("Erro DELETE /admin/usuarios/:id:", err);
+      res.status(500).json({ error: "Erro ao desativar usuário" });
+    }
+  }
+);
+
+// ================= NOVO ENDPOINT UNIFICADO + CACHE POSTGRES (COM AUTH & LOG) =================
 /**
- * GET /consulta-completa?cnpj=...&force=1
- * - Verifica cache Postgres (últimos CACHE_DIAS)
- * - Se tiver e NÃO tiver force=1 -> devolve do banco
- * - Se não tiver ou force=1 -> chama RADAR + ReceitaWS, salva no banco e devolve
- * - Sempre devolve dataConsulta (dia de hoje ou do registro do banco)
+ * GET /consulta-completa?cnpj=...&force=1&origem=lote
+ * Requer Authorization: Bearer <token>
  */
-app.get("/consulta-completa", async (req, res) => {
+app.get("/consulta-completa", authMiddleware, async (req, res) => {
+  const usuarioId = req.user.id;
+  const origem = req.query.origem || "unitaria";
+
   try {
     const cnpj = normalizarCNPJ(req.query.cnpj);
-    const force = req.query.force === "1" || req.query.force === "true";
+    const force =
+      req.query.force === "1" || req.query.force === "true" ? true : false;
 
     if (!cnpj) {
       return res.status(400).json({ error: "CNPJ obrigatório" });
     }
 
-    // limpa registros antigos (90 dias)
+    // se for consulta em lote, checa permissão (pode_lote) no banco
+    if (origem === "lote") {
+      const sql = `
+        SELECT role, ativo, pode_lote
+        FROM usuarios
+        WHERE id = $1
+      `;
+      const { rows } = await pool.query(sql, [usuarioId]);
+      const u = rows[0];
+
+      if (!u || !u.ativo) {
+        return res
+          .status(403)
+          .json({ error: "Usuário inativo ou não encontrado." });
+      }
+
+      if (!u.pode_lote && u.role !== "admin") {
+        return res.status(403).json({
+          error: "Você não tem permissão para consultas em lote.",
+        });
+      }
+    }
+
     await limparConsultasAntigas();
 
     if (!force) {
       const cache = await getConsultaRecente(cnpj);
       if (cache) {
+        await registrarLogConsulta(
+          usuarioId,
+          cnpj,
+          origem,
+          true,
+          "resposta do cache"
+        );
         return res.json({
           fromCache: true,
           dataConsulta: cache.data_consulta,
@@ -374,9 +801,16 @@ app.get("/consulta-completa", async (req, res) => {
     }
 
     if (!radar && !receita) {
-      return res
-        .status(502)
-        .json({ error: "Nenhuma das APIs (RADAR/Receita) respondeu." });
+      await registrarLogConsulta(
+        usuarioId,
+        cnpj,
+        origem,
+        false,
+        "RADAR e ReceitaWS não responderam"
+      );
+      return res.status(502).json({
+        error: "Nenhuma das APIs (RADAR/Receita) respondeu.",
+      });
     }
 
     const dados = {
@@ -401,25 +835,36 @@ app.get("/consulta-completa", async (req, res) => {
 
     const linha = await salvarConsulta(cnpj, dados);
 
+    await registrarLogConsulta(
+      usuarioId,
+      cnpj,
+      origem,
+      true,
+      "consulta executada nas APIs e salva"
+    );
+
     return res.json({
       fromCache: false,
-      dataConsulta: linha.data_consulta, // yyyy-mm-dd
+      dataConsulta: linha.data_consulta,
       cnpj,
       ...dados,
     });
   } catch (err) {
     console.error("Erro /consulta-completa:", err);
+    await registrarLogConsulta(
+      usuarioId,
+      normalizarCNPJ(req.query.cnpj),
+      origem,
+      false,
+      err.message
+    );
     return res.status(500).json({ error: "Erro interno em consulta-completa" });
   }
 });
 
-// ================= HISTÓRICO =================
+// ================= HISTÓRICO (COM AUTH) =================
 
-/**
- * GET /historico/datas
- * -> traz todas as datas de consulta disponíveis no banco (para montar tela de histórico)
- */
-app.get("/historico/datas", async (req, res) => {
+app.get("/historico/datas", authMiddleware, async (req, res) => {
   try {
     const sql = `
       SELECT data_consulta, COUNT(*) AS total
@@ -440,12 +885,7 @@ app.get("/historico/datas", async (req, res) => {
   }
 });
 
-/**
- * GET /historico?data=2025-11-18
- * GET /historico?from=2025-11-01&to=2025-11-30
- * -> devolve registros para exportar pro Excel
- */
-app.get("/historico", async (req, res) => {
+app.get("/historico", authMiddleware, async (req, res) => {
   try {
     const { data, from, to } = req.query;
 

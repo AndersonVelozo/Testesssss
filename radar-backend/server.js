@@ -7,6 +7,10 @@ const BACKEND_BASE_URL = isLocalHost
   ? "http://localhost:3000"
   : "https://radar-backend-omjv.onrender.com";
 
+function getToken() {
+  return localStorage.getItem("authToken") || "";
+}
+
 // ---------- ELEMENTOS BÁSICOS ----------
 const cnpjInput = document.getElementById("cnpj");
 const rawText = document.getElementById("rawText");
@@ -275,13 +279,37 @@ confirmImportBtn.addEventListener("click", async () => {
 });
 
 // ---------- CONSULTA COMPLETA NO BACKEND ----------
-async function consultarBackendCompleto(cnpj, { force = false } = {}) {
+async function consultarBackendCompleto(
+  cnpj,
+  { force = false, origem = "unitaria" } = {}
+) {
   const url = new URL(`${BACKEND_BASE_URL}/consulta-completa`);
   url.searchParams.set("cnpj", cnpj);
   if (force) url.searchParams.set("force", "1");
+  if (origem) url.searchParams.set("origem", origem);
 
-  const resp = await fetch(url.toString());
+  const token = getToken();
+  if (!token) {
+    showInfoModal(
+      "Sessão expirada",
+      "Você precisa estar logado para consultar. Faça login novamente."
+    );
+    throw new Error("Sem token");
+  }
+
+  const resp = await fetch(url.toString(), {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
   if (!resp.ok) {
+    if (resp.status === 401) {
+      showInfoModal(
+        "Sessão expirada",
+        "Seu login expirou ou é inválido. Faça login novamente."
+      );
+    }
     throw new Error(`Erro ao consultar backend: HTTP ${resp.status}`);
   }
 
@@ -699,6 +727,15 @@ exportExcelBtn.addEventListener("click", () => {
 
 // ---------- HISTÓRICO (simples: por data ou intervalo) ----------
 historyBtn.addEventListener("click", async () => {
+  const token = getToken();
+  if (!token) {
+    showInfoModal(
+      "Sessão expirada",
+      "Você precisa estar logado para consultar o histórico."
+    );
+    return;
+  }
+
   const tipo = prompt(
     "Digite 1 para histórico de um dia ou 2 para intervalo de datas:",
     "1"
@@ -712,7 +749,10 @@ historyBtn.addEventListener("click", async () => {
 
     try {
       const resp = await fetch(
-        `${BACKEND_BASE_URL}/historico?data=${encodeURIComponent(data)}`
+        `${BACKEND_BASE_URL}/historico?data=${encodeURIComponent(data)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const linhas = await resp.json();
@@ -742,7 +782,10 @@ historyBtn.addEventListener("click", async () => {
       const url = `${BACKEND_BASE_URL}/historico?from=${encodeURIComponent(
         from
       )}&to=${encodeURIComponent(to)}`;
-      const resp = await fetch(url);
+
+      const resp = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const linhas = await resp.json();
 

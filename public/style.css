@@ -508,3 +508,406 @@ tbody tr:hover {
 .modal-list strong {
   color: #e5e7eb;
 }
+
+/* =============== LOGIN PAGE =============== */
+
+body.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-card {
+  max-width: 420px;
+}
+
+.login-title {
+  text-align: left;
+  margin-bottom: 8px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.login-button {
+  margin-top: 18px;
+  width: 100%;
+  justify-content: center;
+}
+
+.login-msg {
+  margin-top: 8px;
+  min-height: 18px;
+}
+
+/* Login em telas pequenas */
+@media (max-width: 600px) {
+  body.login-page {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 18px 16px 20px;
+  }
+}
+
+/* =============== ADMIN PAGE =============== */
+
+body.admin-page {
+  padding: 24px;
+}
+
+.admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.admin-user-info {
+  text-align: right;
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.badge-role {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  color: #e5e7eb;
+  background: rgba(15, 23, 42, 0.9);
+  margin-top: 4px;
+}
+
+.badge-role-admin {
+  border-color: rgba(249, 115, 22, 0.8);
+  background: rgba(248, 113, 113, 0.16);
+}
+
+.badge-role-user {
+  border-color: rgba(59, 130, 246, 0.7);
+  background: rgba(59, 130, 246, 0.16);
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr);
+  gap: 18px;
+}
+
+.admin-panel-card {
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 18px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  padding: 18px 18px 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.8);
+}
+
+.admin-section-title {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  color: #e5e7eb;
+}
+
+.admin-section-subtitle {
+  margin: 0 0 14px;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.admin-form-col {
+  flex: 1 1 0;
+}
+
+.admin-checkbox-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #e5e7eb;
+}
+
+.admin-table-wrapper {
+  margin-top: 8px;
+}
+
+.admin-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-sm {
+  padding: 6px 10px;
+  font-size: 0.78rem;
+}
+
+/* label dos toggles */
+.admin-switch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #e5e7eb;
+}
+
+/* Responsivo do painel admin */
+@media (max-width: 900px) {
+  body.admin-page {
+    padding: 18px;
+  }
+
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  body.admin-page {
+    padding: 14px;
+  }
+
+  .admin-header {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+
+  .admin-user-info {
+    text-align: left;
+  }
+}
+
+/* ================== PAINEL ADMINISTRATIVO ================== */
+
+/* Deixa o card principal do painel um pouco mais "premium" */
+.admin-wrapper {
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+/* Título + info do usuário logado + botão sair */
+.admin-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.admin-title-block h1 {
+  margin-bottom: 4px;
+}
+
+.admin-title-block p {
+  margin: 0;
+  font-size: 0.86rem;
+  color: #9ca3af;
+}
+
+/* Badge "ADMIN" + nome */
+.admin-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-name {
+  font-size: 0.9rem;
+  color: #e5e7eb;
+}
+
+.admin-role-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(37, 99, 235, 0.15);
+  border: 1px solid rgba(129, 140, 248, 0.7);
+  color: #c7d2fe;
+}
+
+/* Botão sair mais discreto */
+.admin-logout-btn {
+  padding-inline: 14px;
+  font-size: 0.8rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.6);
+}
+
+.admin-logout-btn:hover {
+  background: rgba(30, 64, 175, 0.25);
+}
+
+/* Grid principal: formulário à esquerda, tabela à direita */
+.admin-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.65fr);
+  gap: 22px;
+  align-items: flex-start;
+}
+
+/* Cards do painel */
+.admin-card {
+  border-radius: 22px;
+  padding: 22px 22px 20px;
+  background: radial-gradient(
+      circle at top left,
+      rgba(59, 130, 246, 0.22),
+      transparent 55%
+    ),
+    rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(30, 64, 175, 0.7);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.95);
+}
+
+/* Título dos cards */
+.admin-card-title {
+  font-size: 1.05rem;
+  margin: 0 0 4px;
+}
+
+.admin-card-subtitle {
+  margin: 0 0 18px;
+  font-size: 0.82rem;
+  color: #9ca3af;
+}
+
+/* Campos um pouco mais espaçados no formulário */
+.admin-form-group {
+  margin-bottom: 12px;
+}
+
+/* Linha de "Perfil / Status" mais organizada */
+.admin-inline-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: center;
+}
+
+/* Checkbox de permissões */
+.admin-perms {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(55, 65, 81, 0.9);
+  font-size: 0.82rem;
+}
+
+/* Rodapé dos botões do formulário */
+.admin-form-actions {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Mensagem de erro/sucesso abaixo dos botões */
+.admin-form-msg {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #fca5a5;
+}
+
+/* Tabela de usuários um pouco mais compacta */
+.admin-user-table-wrapper {
+  margin-top: 8px;
+}
+
+.admin-user-table table {
+  font-size: 0.78rem;
+}
+
+.admin-user-table th {
+  font-size: 0.7rem;
+}
+
+/* Badges de perfil/status na tabela */
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+}
+
+.badge-admin {
+  background: rgba(129, 140, 248, 0.15);
+  color: #e0e7ff;
+  border-color: rgba(129, 140, 248, 0.8);
+}
+
+.badge-user {
+  background: rgba(59, 130, 246, 0.12);
+  color: #bfdbfe;
+  border-color: rgba(59, 130, 246, 0.75);
+}
+
+.badge-ativo {
+  background: rgba(34, 197, 94, 0.2);
+  color: #bbf7d0;
+  border-color: rgba(34, 197, 94, 0.7);
+}
+
+.badge-inativo {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.7);
+}
+
+/* Botões de ação na tabela */
+.admin-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-actions button {
+  padding: 3px 10px;
+  font-size: 0.74rem;
+}
+
+/* Responsivo */
+@media (max-width: 980px) {
+  .admin-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-user-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

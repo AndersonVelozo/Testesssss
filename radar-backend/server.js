@@ -26,6 +26,7 @@ const exportExcelBtn = document.getElementById("exportExcel");
 const retryErrorsBtn = document.getElementById("retryErrors");
 const retrySelectedBtn = document.getElementById("retrySelected");
 const historyBtn = document.getElementById("historyBtn");
+const selectAllCheckbox = document.getElementById("selectAll");
 
 const loteStatusEl = document.getElementById("loteStatus");
 const loteProgressBar = document.getElementById("loteProgressBar");
@@ -45,7 +46,6 @@ function removerLinhaVazia() {
 
 function formatarDataBR(dataISO) {
   if (!dataISO) return "";
-  // aceita Date, string yyyy-mm-dd, etc
   const d = new Date(dataISO);
   if (Number.isNaN(d.getTime())) return String(dataISO);
   const dia = String(d.getDate()).padStart(2, "0");
@@ -71,12 +71,18 @@ function criarLinhaDOM(registro) {
     classeSituacao = "negado";
   }
 
+  const cnpjCellValue = registro.cnpj || "";
+
   tr.innerHTML = `
-    <td>
-      <input type="checkbox" class="select-cnpj" />
+    <td style="text-align:center;">
+      <input
+        type="checkbox"
+        class="select-cnpj"
+        data-cnpj="${cnpjCellValue}"
+      />
     </td>
     <td>${registro.dataConsultaBR || ""}</td>
-    <td>${registro.cnpj || ""}</td>
+    <td>${cnpjCellValue}</td>
     <td>${registro.contribuinte || ""}</td>
     <td>
       <span class="tag ${classeSituacao}">
@@ -130,10 +136,45 @@ function renderizarTodos() {
     </tr>
   `;
 
-  if (!registros.length) return;
+  if (!registros.length) {
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+    }
+    return;
+  }
 
   removerLinhaVazia();
   registros.forEach((r) => criarLinhaDOM(r));
+
+  // reseta estado do "selecionar todos" ao re-renderizar
+  if (selectAllCheckbox) {
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
+  }
+}
+
+// helper: pega CNPJs selecionados na tabela
+function getCnpjsSelecionados() {
+  const selecionados = [];
+  const linhas = Array.from(tableBody.querySelectorAll("tr:not(.no-data-row)"));
+
+  linhas.forEach((tr) => {
+    const chk = tr.querySelector(".select-cnpj");
+    if (chk && chk.checked) {
+      // pega pelo atributo data-cnpj ou pela coluna do CNPJ
+      const cnpjAttr = chk.dataset.cnpj;
+      let cnpj = cnpjAttr || "";
+      if (!cnpj) {
+        const cnpjCell = tr.children[2];
+        if (cnpjCell) cnpj = cnpjCell.textContent || "";
+      }
+      cnpj = normalizarCNPJ(cnpj);
+      if (cnpj) selecionados.push(cnpj);
+    }
+  });
+
+  return selecionados;
 }
 
 // ---------- PROGRESSO DO LOTE ----------
@@ -462,8 +503,6 @@ extractAddBtn.addEventListener("click", async () => {
   try {
     const extras = await consultarBackendCompleto(cnpj);
 
-    // sobrescreve com o que veio do texto RADAR (habilitação),
-    // mantendo cadastro vindo do backend
     const dados = {
       ...extras,
       contribuinte,
@@ -502,7 +541,7 @@ extractAddBtn.addEventListener("click", async () => {
   }
 });
 
-// ---------- RECONSULTAR ERROS (lógica antiga, mas usando /consulta-completa) ----------
+// ---------- RECONSULTAR ERROS ----------
 async function reconsultarErros() {
   const temHabilitacao = (r) =>
     !!(
@@ -570,21 +609,9 @@ async function reconsultarErros() {
 
 // ---------- RECONSULTAR APENAS SELECIONADOS ----------
 async function reconsultarSelecionados() {
-  const linhas = Array.from(tableBody.querySelectorAll("tr")).filter(
-    (tr) => !tr.classList.contains("no-data-row")
-  );
+  const cnpjsSelecionados = getCnpjsSelecionados();
 
-  const selecionados = [];
-
-  linhas.forEach((tr, idx) => {
-    const checkbox = tr.querySelector(".select-cnpj");
-    if (checkbox && checkbox.checked) {
-      const reg = registros[idx];
-      if (reg) selecionados.push(reg);
-    }
-  });
-
-  if (!selecionados.length) {
+  if (!cnpjsSelecionados.length) {
     showInfoModal(
       "Nenhum selecionado",
       "Selecione pelo menos um CNPJ na tabela para reconsultar."
@@ -592,13 +619,20 @@ async function reconsultarSelecionados() {
     return;
   }
 
+  const registrosSelecionados = registros.filter((r) =>
+    cnpjsSelecionados.includes(normalizarCNPJ(r.cnpj))
+  );
+
   let processados = 0;
-  const total = selecionados.length;
+  const total = registrosSelecionados.length;
   atualizarProgressoLote(0, total);
 
-  for (const reg of selecionados) {
+  for (const reg of registrosSelecionados) {
     try {
-      const dados = await consultarBackendCompleto(reg.cnpj, { force: true });
+      const dados = await consultarBackendCompleto(reg.cnpj, {
+        force: true,
+        origem: "lote",
+      });
       Object.assign(reg, dados);
     } catch (err) {
       console.error("Erro ao reconsultar selecionado", reg.cnpj, err);
@@ -699,7 +733,7 @@ exportExcelBtn.addEventListener("click", () => {
       tds[11].innerText, // Data Constituição
       tds[12].innerText, // Regime Tributário
       tds[13].innerText, // Data Opção Simples
-      tds[14].innerText, // Capital Social  ✅ AGORA VAI
+      tds[14].innerText, // Capital Social
     ]);
   });
 
@@ -725,7 +759,7 @@ exportExcelBtn.addEventListener("click", () => {
   );
 });
 
-// ---------- HISTÓRICO (simples: por data ou intervalo) ----------
+// ---------- HISTÓRICO ----------
 historyBtn.addEventListener("click", async () => {
   const token = getToken();
   if (!token) {
@@ -867,6 +901,42 @@ function exportarHistoricoExcel(linhas, nomeBase) {
 retrySelectedBtn.addEventListener("click", () => {
   reconsultarSelecionados();
 });
+
+// ---------- SELECT ALL ----------
+if (selectAllCheckbox) {
+  // clicar no header marca/desmarca todos
+  selectAllCheckbox.addEventListener("change", () => {
+    const marcado = selectAllCheckbox.checked;
+    tableBody
+      .querySelectorAll(".select-cnpj")
+      .forEach((chk) => (chk.checked = marcado));
+  });
+
+  // atualizar estado do selectAll quando marcar/desmarcar linha
+  tableBody.addEventListener("change", (e) => {
+    if (!e.target.classList.contains("select-cnpj")) return;
+
+    const boxes = tableBody.querySelectorAll(".select-cnpj");
+    const marcados = tableBody.querySelectorAll(".select-cnpj:checked");
+
+    if (!boxes.length) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+      return;
+    }
+
+    if (marcados.length === boxes.length) {
+      selectAllCheckbox.checked = true;
+      selectAllCheckbox.indeterminate = false;
+    } else if (marcados.length === 0) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+    } else {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = true;
+    }
+  });
+}
 
 // ---------- AO CARREGAR A PÁGINA ----------
 window.addEventListener("DOMContentLoaded", () => {

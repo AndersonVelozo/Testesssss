@@ -11,6 +11,23 @@ function getToken() {
   return localStorage.getItem("authToken") || "";
 }
 
+function getCurrentUserName() {
+  const token = getToken();
+  if (!token) return "";
+
+  try {
+    const [, payloadBase64] = token.split(".");
+    // JWT usa base64url, convertemos
+    const normalized = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(normalized);
+    const payload = JSON.parse(json);
+    return payload.nome || "";
+  } catch (err) {
+    console.error("Não foi possível ler o nome do usuário do token:", err);
+    return "";
+  }
+}
+
 // ---------- ELEMENTOS BÁSICOS ----------
 const cnpjInput = document.getElementById("cnpj");
 const rawText = document.getElementById("rawText");
@@ -397,7 +414,8 @@ async function processarLoteCnpjs(cnpjs) {
 
   for (const cnpj of cnpjs) {
     try {
-      const dados = await consultarBackendCompleto(cnpj);
+      const dados = await consultarBackendCompleto(cnpj, { origem: "lote" });
+
       adicionarLinhaTabela(dados);
     } catch (err) {
       console.error("Erro inesperado no lote para", cnpj, err);
@@ -741,21 +759,32 @@ exportExcelBtn.addEventListener("click", () => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Habilitações");
 
+  // 🔹 pega data e nome do usuário
   const hojeISO = new Date().toISOString().slice(0, 10);
-  let nomeArquivo = prompt(
+  const userName = getCurrentUserName(); // 👈 usa o nome do token
+
+  // 🔹 pergunta o nome base da planilha
+  let baseName = prompt(
     "Digite um nome para o arquivo Excel (sem extensão):",
-    `habilitacoes_${hojeISO}`
+    `planilha_habilitacoes_${hojeISO}`
   );
 
-  if (!nomeArquivo || !nomeArquivo.trim()) {
-    nomeArquivo = `habilitacoes_${hojeISO}`;
+  if (!baseName || !baseName.trim()) {
+    baseName = `habilitacoes_${hojeISO}`;
   }
 
-  XLSX.writeFile(wb, `${nomeArquivo.trim()}.xlsx`);
+  // 🔹 adiciona @NomeDoUsuario automaticamente
+  let finalName = baseName.trim();
+  if (userName) {
+    finalName += ` @${userName}`;
+  }
+
+  // 🔹 exporta o arquivo
+  XLSX.writeFile(wb, `${finalName}.xlsx`);
 
   showInfoModal(
     "Exportação concluída",
-    `Arquivo Excel gerado com sucesso: ${nomeArquivo.trim()}.xlsx`
+    `Arquivo Excel gerado com sucesso:<br><strong>${finalName}.xlsx</strong>`
   );
 });
 
@@ -783,7 +812,9 @@ historyBtn.addEventListener("click", async () => {
 
     try {
       const resp = await fetch(
-        `${BACKEND_BASE_URL}/historico?data=${encodeURIComponent(data)}`,
+        `${BACKEND_BASE_URL}/historico?data=${encodeURIComponent(
+          data
+        )}&registrarExport=1`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -815,7 +846,7 @@ historyBtn.addEventListener("click", async () => {
     try {
       const url = `${BACKEND_BASE_URL}/historico?from=${encodeURIComponent(
         from
-      )}&to=${encodeURIComponent(to)}`;
+      )}&to=${encodeURIComponent(to)}&registrarExport=1`;
 
       const resp = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },

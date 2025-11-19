@@ -47,7 +47,8 @@ async function initDb() {
       data_constituicao TEXT,
       regime_tributario TEXT,
       data_opcao_simples TEXT,
-      capital_social    TEXT
+      capital_social    TEXT,
+      exportado_por     TEXT              -- 👈 NOVO
     );
 
     CREATE INDEX IF NOT EXISTS idx_consultas_radar_cnpj_data
@@ -76,6 +77,10 @@ async function initDb() {
     ALTER TABLE usuarios
       ADD COLUMN IF NOT EXISTS pode_lote BOOLEAN NOT NULL DEFAULT TRUE;
 
+    -- garante que a coluna exista mesmo em bancos já criados
+    ALTER TABLE consultas_radar
+      ADD COLUMN IF NOT EXISTS exportado_por TEXT;
+
     -- 🔧 patch: se existir coluna 'senha' antiga NOT NULL, tornamos NULL
     DO $$
     BEGIN
@@ -87,7 +92,6 @@ async function initDb() {
         BEGIN
           ALTER TABLE usuarios ALTER COLUMN senha DROP NOT NULL;
         EXCEPTION WHEN undefined_column THEN
-          -- se não existir mais, ignoramos
           NULL;
         END;
       END IF;
@@ -417,13 +421,6 @@ async function consultaRadarAPI(cnpjLimpo) {
       "";
   }
 
-  const nenhumCampoRadarPreenchido =
-    !contribuinte && !situacao && !dataSituacao && !submodalidade;
-
-  if (dados && nenhumCampoRadarPreenchido) {
-    situacao = "DADOS INDISPONÍVEIS (RADAR)";
-  }
-
   return {
     contribuinte,
     situacao,
@@ -716,6 +713,11 @@ app.delete(
  * GET /consulta-completa?cnpj=...&force=1&origem=lote
  * Requer Authorization: Bearer <token>
  */
+// ================= NOVO ENDPOINT UNIFICADO + CACHE POSTGRES (COM AUTH & LOG) =================
+/**
+ * GET /consulta-completa?cnpj=...&force=1&origem=lote
+ * Requer Authorization: Bearer <token>
+ */
 app.get("/consulta-completa", authMiddleware, async (req, res) => {
   const usuarioId = req.user.id;
   const origem = req.query.origem || "unitaria";
@@ -752,46 +754,69 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       }
     }
 
+    // 🔹 1) Tenta cache primeiro, se NÃO for "force"
     await limparConsultasAntigas();
 
     if (!force) {
       const cache = await getConsultaRecente(cnpj);
+
       if (cache) {
-        await registrarLogConsulta(
-          usuarioId,
-          cnpj,
-          origem,
-          true,
-          "resposta do cache"
-        );
-        return res.json({
-          fromCache: true,
-          dataConsulta: cache.data_consulta,
-          cnpj,
-          contribuinte: cache.contribuinte || "",
-          situacao: cache.situacao || "",
-          dataSituacao: cache.data_situacao || "",
-          submodalidade: cache.submodalidade || "",
-          razaoSocial: cache.razao_social || "",
-          nomeFantasia: cache.nome_fantasia || "",
-          municipio: cache.municipio || "",
-          uf: cache.uf || "",
-          dataConstituicao: cache.data_constituicao || "",
-          regimeTributario: cache.regime_tributario || "",
-          dataOpcaoSimples: cache.data_opcao_simples || "",
-          capitalSocial: cache.capital_social || "",
-        });
+        // se vier um cache “podre” (sem nenhuma info de habilitação),
+        // ignoramos e deixamos seguir para consulta via API
+        const cacheSemRadar =
+          !cache.situacao &&
+          !cache.contribuinte &&
+          !cache.submodalidade &&
+          !cache.data_situacao;
+
+        if (!cacheSemRadar) {
+          await registrarLogConsulta(
+            usuarioId,
+            cnpj,
+            origem,
+            true,
+            "resposta do cache"
+          );
+
+          return res.json({
+            fromCache: true,
+            dataConsulta: cache.data_consulta,
+            cnpj,
+            contribuinte: cache.contribuinte || "",
+            situacao: cache.situacao || "",
+            dataSituacao: cache.data_situacao || "",
+            submodalidade: cache.submodalidade || "",
+            razaoSocial: cache.razao_social || "",
+            nomeFantasia: cache.nome_fantasia || "",
+            municipio: cache.municipio || "",
+            uf: cache.uf || "",
+            dataConstituicao: cache.data_constituicao || "",
+            regimeTributario: cache.regime_tributario || "",
+            dataOpcaoSimples: cache.data_opcao_simples || "",
+            capitalSocial: cache.capital_social || "",
+          });
+        } else {
+          console.log(
+            "⚠ Cache ignorado por estar sem dados de habilitação:",
+            cnpj
+          );
+        }
       }
     }
 
-    // se não veio do cache -> consulta APIs
+    // 🔹 2) Não tem no cache (ou force=true) → consulta APIs
     let radar = null;
     let receita = null;
+
+    let radarFalhou = false;
+    let msgErroRadar = "";
 
     try {
       radar = await consultaRadarAPI(cnpj);
     } catch (e) {
-      console.warn("Falha RADAR em /consulta-completa:", cnpj, e.message);
+      radarFalhou = true;
+      msgErroRadar = e.message || "Falha RADAR";
+      console.warn("Falha RADAR em /consulta-completa:", cnpj, msgErroRadar);
     }
 
     try {
@@ -800,6 +825,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       console.warn("Falha ReceitaWS em /consulta-completa:", cnpj, e.message);
     }
 
+    // se NENHUMA das duas respondeu, mantém o erro 502
     if (!radar && !receita) {
       await registrarLogConsulta(
         usuarioId,
@@ -813,39 +839,94 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       });
     }
 
+    // 🔹 Fallback: se a RADAR respondeu (não deu erro), mas não trouxe
+    // NENHUM campo de habilitação, tratamos como "NÃO HABILITADA"
+    if (radar && !radarFalhou) {
+      const semCamposRadar =
+        !radar.contribuinte &&
+        !radar.situacao &&
+        !radar.dataSituacao &&
+        !radar.submodalidade;
+
+      if (semCamposRadar) {
+        radar.situacao = "NÃO HABILITADA";
+      }
+    }
+
+    // texto padrão quando só o RADAR falha (Receita respondeu)
+    const textoSemInfo = radarFalhou ? "Sem informação" : "";
+
     const dados = {
-      contribuinte: (radar && radar.contribuinte) || "",
-      situacao: (radar && radar.situacao) || "",
-      dataSituacao: (radar && radar.dataSituacao) || "",
-      submodalidade: (radar && radar.submodalidade) || "",
-      razaoSocial: (receita && receita.razaoSocial) || "",
+      // Campos de habilitação (RADAR)
+      contribuinte: radar?.contribuinte || textoSemInfo,
+      situacao: radar?.situacao || textoSemInfo,
+      dataSituacao: radar?.dataSituacao || textoSemInfo,
+      submodalidade: radar?.submodalidade || textoSemInfo,
+
+      // Campos cadastrais (ReceitaWS)
+      razaoSocial: receita?.razaoSocial || "",
       nomeFantasia:
         receita && receita.nomeFantasia && receita.nomeFantasia.trim().length
           ? receita.nomeFantasia.trim()
           : receita
           ? "Sem nome fantasia"
           : "",
-      municipio: (receita && receita.municipio) || "",
-      uf: (receita && receita.uf) || "",
-      dataConstituicao: (receita && receita.dataConstituicao) || "",
-      regimeTributario: (receita && receita.regimeTributario) || "",
-      dataOpcaoSimples: (receita && receita.dataOpcaoSimples) || "",
-      capitalSocial: (receita && receita.capitalSocial) || "",
+      municipio: receita?.municipio || "",
+      uf: receita?.uf || "",
+      dataConstituicao: receita?.dataConstituicao || "",
+      regimeTributario: receita?.regimeTributario || "",
+      dataOpcaoSimples: receita?.dataOpcaoSimples || "",
+      capitalSocial: receita?.capitalSocial || "",
     };
 
-    const linha = await salvarConsulta(cnpj, dados);
+    // 🔹 3) DECIDE SE VAI SALVAR NO BANCO
+    //
+    // Regras:
+    //  - Se NÃO tiver RADAR, mas tiver Receita, e o RADAR FALHOU (timeout / erro HTTP),
+    //    NÃO salva no banco (consulta parcial, só cadastral).
+    //  - Se tiver RADAR (mesmo que sem Receita) OU RADAR retornou "DADOS INDISPONÍVEIS (RADAR)",
+    //    considera resposta válida e salva normal.
+    let salvarNoBanco = true;
+    if (!radar && receita && radarFalhou) {
+      salvarNoBanco = false;
+    }
 
-    await registrarLogConsulta(
-      usuarioId,
-      cnpj,
-      origem,
-      true,
-      "consulta executada nas APIs e salva"
-    );
+    let dataConsultaResposta = new Date().toISOString().slice(0, 10); // fallback
+    let linha = null;
+
+    if (salvarNoBanco) {
+      linha = await salvarConsulta(cnpj, dados);
+      dataConsultaResposta = linha.data_consulta;
+
+      console.log("✔ Consulta salva no banco:", linha.id, cnpj);
+
+      await registrarLogConsulta(
+        usuarioId,
+        cnpj,
+        origem,
+        true,
+        radarFalhou
+          ? "consulta salva (RADAR falhou, mas dados parciais válidos)"
+          : "consulta salva"
+      );
+    } else {
+      console.log(
+        "ℹ Consulta NÃO salva no banco (somente ReceitaWS, RADAR falhou):",
+        cnpj
+      );
+
+      await registrarLogConsulta(
+        usuarioId,
+        cnpj,
+        origem,
+        true,
+        "consulta parcial (somente ReceitaWS, não salva no banco)"
+      );
+    }
 
     return res.json({
       fromCache: false,
-      dataConsulta: linha.data_consulta,
+      dataConsulta: dataConsultaResposta,
       cnpj,
       ...dados,
     });
@@ -887,7 +968,8 @@ app.get("/historico/datas", authMiddleware, async (req, res) => {
 
 app.get("/historico", authMiddleware, async (req, res) => {
   try {
-    const { data, from, to } = req.query;
+    const { data, from, to, registrarExport } = req.query;
+    const deveRegistrarExport = registrarExport === "1";
 
     let sql;
     let params;
@@ -917,6 +999,31 @@ app.get("/historico", authMiddleware, async (req, res) => {
 
     const { rows } = await pool.query(sql, params);
 
+    // 👇 Se for exportação, grava quem exportou no banco
+    if (deveRegistrarExport && req.user && req.user.nome) {
+      const nomeUsuario = req.user.nome;
+      let updateSql;
+      let updateParams;
+
+      if (data) {
+        updateSql = `
+          UPDATE consultas_radar
+          SET exportado_por = $1
+          WHERE data_consulta = $2;
+        `;
+        updateParams = [nomeUsuario, data];
+      } else {
+        updateSql = `
+          UPDATE consultas_radar
+          SET exportado_por = $1
+          WHERE data_consulta BETWEEN $2 AND $3;
+        `;
+        updateParams = [nomeUsuario, from, to];
+      }
+
+      await pool.query(updateSql, updateParams);
+    }
+
     const resultado = rows.map((linha) => ({
       dataConsulta: linha.data_consulta,
       cnpj: linha.cnpj,
@@ -932,6 +1039,7 @@ app.get("/historico", authMiddleware, async (req, res) => {
       regimeTributario: linha.regime_tributario || "",
       dataOpcaoSimples: linha.data_opcao_simples || "",
       capitalSocial: linha.capital_social || "",
+      exportadoPor: linha.exportado_por || "", // 👈 devolve pro front se quiser usar
     }));
 
     return res.json(resultado);

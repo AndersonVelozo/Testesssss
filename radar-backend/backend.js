@@ -21,9 +21,11 @@ const path = require("path");
 app.use(express.static(path.join(__dirname, "../public")));
 
 // ========== POSTGRES (Railway) ==========
+const isRender = !!process.env.RENDER; // o Render seta essa variável sozinho
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: false, // no Railway interno não precisa de SSL
+  ssl: isRender ? { rejectUnauthorized: false } : false,
 });
 
 // cria tabelas se não existir + coluna extra do painel ADM

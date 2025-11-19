@@ -20,8 +20,10 @@ const path = require("path");
 // Servir arquivos estáticos do front-end
 app.use(express.static(path.join(__dirname, "../public")));
 
-// ========== POSTGRES (Railway) ==========
-const isRender = !!process.env.RENDER; // o Render seta essa variável sozinho
+// ========== POSTGRES (Render) ==========
+const isRender = !!process.env.RENDER; // o Render seta isso automaticamente
+
+console.log("Iniciando Pool Postgres. RENDER =", isRender);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,

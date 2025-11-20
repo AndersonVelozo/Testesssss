@@ -256,9 +256,7 @@ function formatarCapitalSocial(valorBruto) {
   return `R$ ${valorBruto}`;
 }
 
-// ========== MIDDLEWARES ==========
-
-// ========== MIDDLEWARES ==========
+/// ========== MIDDLEWARES ==========
 
 // body JSON
 app.use(express.json());
@@ -266,14 +264,11 @@ app.use(express.json());
 // CORS ABERTO (pra resolver de vez o problema entre Render x Render)
 app.use(
   cors({
-    origin: true, // reflete qualquer origem
+    origin: true, // aceita qualquer origem
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
-// garante que o preflight OPTIONS receba CORS também
-app.options("*", cors());
 
 // Middleware de autenticação (qualquer usuário logado)
 function authMiddleware(req, res, next) {

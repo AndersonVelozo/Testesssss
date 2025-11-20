@@ -308,6 +308,43 @@ function formatarCapitalSocial(valorBruto) {
   return `R$ ${valorBruto}`;
 }
 
+// pequena pausa (ms)
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// helper genérico para tentar uma função assíncrona com retry
+async function tentarComRetry(fn, descricao, maxTentativas = 3, delayMs = 800) {
+  let ultimoErro = null;
+
+  for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+    try {
+      const resp = await fn();
+      // se a função retornar algo "truthy", consideramos sucesso
+      if (resp) {
+        if (tentativa > 1) {
+          console.log(
+            `✔ ${descricao} OK na tentativa ${tentativa}/${maxTentativas}`
+          );
+        }
+        return { ok: true, valor: resp };
+      }
+    } catch (err) {
+      ultimoErro = err;
+      console.warn(
+        `⚠ Falha em ${descricao} (tentativa ${tentativa}/${maxTentativas}):`,
+        err.message || err
+      );
+      if (tentativa < maxTentativas) {
+        await sleep(delayMs);
+      }
+    }
+  }
+
+  console.warn(`❌ ${descricao} falhou após ${maxTentativas} tentativas.`);
+  return { ok: false, erro: ultimoErro };
+}
+
 /// ========== MIDDLEWARES ==========
 
 // body JSON
@@ -830,11 +867,6 @@ app.delete(
  * GET /consulta-completa?cnpj=...&force=1&origem=lote
  * Requer Authorization: Bearer <token>
  */
-// ================= NOVO ENDPOINT UNIFICADO + CACHE POSTGRES (COM AUTH & LOG) =================
-/**
- * GET /consulta-completa?cnpj=...&force=1&origem=lote
- * Requer Authorization: Bearer <token>
- */
 app.get("/consulta-completa", authMiddleware, async (req, res) => {
   const usuarioId = req.user.id;
   const origem = req.query.origem || "unitaria";
@@ -878,8 +910,6 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       const cache = await getConsultaRecente(cnpj);
 
       if (cache) {
-        // se vier um cache “podre” (sem nenhuma info de habilitação),
-        // ignoramos e deixamos seguir para consulta via API
         const cacheSemRadar =
           !cache.situacao &&
           !cache.contribuinte &&
@@ -921,25 +951,39 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       }
     }
 
-    // 🔹 2) Não tem no cache (ou force=true) → consulta APIs
+    // 🔹 2) Não tem no cache (ou force=true) → consulta APIs com RETRY
     let radar = null;
     let receita = null;
 
     let radarFalhou = false;
-    let msgErroRadar = "";
+    let receitaFalhou = false;
 
-    try {
-      radar = await consultaRadarAPI(cnpj);
-    } catch (e) {
+    // RADAR com retry
+    const radarResult = await tentarComRetry(
+      () => consultaRadarAPI(cnpj),
+      `RADAR (${cnpj})`,
+      3,
+      900
+    );
+
+    if (radarResult.ok) {
+      radar = radarResult.valor;
+    } else {
       radarFalhou = true;
-      msgErroRadar = e.message || "Falha RADAR";
-      console.warn("Falha RADAR em /consulta-completa:", cnpj, msgErroRadar);
     }
 
-    try {
-      receita = await consultaReceitaWsAPI(cnpj);
-    } catch (e) {
-      console.warn("Falha ReceitaWS em /consulta-completa:", cnpj, e.message);
+    // ReceitaWS com retry
+    const receitaResult = await tentarComRetry(
+      () => consultaReceitaWsAPI(cnpj),
+      `ReceitaWS (${cnpj})`,
+      10,
+      900
+    );
+
+    if (receitaResult.ok) {
+      receita = receitaResult.valor;
+    } else {
+      receitaFalhou = true;
     }
 
     // se NENHUMA das duas respondeu, mantém o erro 502
@@ -949,7 +993,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
         cnpj,
         origem,
         false,
-        "RADAR e ReceitaWS não responderam"
+        "RADAR e ReceitaWS não responderam após retries"
       );
       return res.status(502).json({
         error: "Nenhuma das APIs (RADAR/Receita) respondeu.",
@@ -970,18 +1014,19 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       }
     }
 
-    // texto padrão quando só o RADAR falha (Receita respondeu)
-    const textoSemInfo = radarFalhou ? "Sem informação" : "";
+    // textos padrão quando uma das APIs falha mesmo após retry
+    const textoSemInfoRadar = radarFalhou ? "Sem informação" : "";
+    const textoSemInfoReceita = receitaFalhou ? "Sem informação" : ""; // aqui deixo vazio mesmo
 
     const dados = {
       // Campos de habilitação (RADAR)
-      contribuinte: radar?.contribuinte || textoSemInfo,
-      situacao: radar?.situacao || textoSemInfo,
-      dataSituacao: radar?.dataSituacao || textoSemInfo,
-      submodalidade: radar?.submodalidade || textoSemInfo,
+      contribuinte: radar?.contribuinte || textoSemInfoRadar,
+      situacao: radar?.situacao || textoSemInfoRadar,
+      dataSituacao: radar?.dataSituacao || textoSemInfoRadar,
+      submodalidade: radar?.submodalidade || textoSemInfoRadar,
 
       // Campos cadastrais (ReceitaWS)
-      razaoSocial: receita?.razaoSocial || "",
+      razaoSocial: receita?.razaoSocial || textoSemInfoReceita,
       nomeFantasia:
         receita && receita.nomeFantasia && receita.nomeFantasia.trim().length
           ? receita.nomeFantasia.trim()
@@ -998,11 +1043,9 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
 
     // 🔹 3) DECIDE SE VAI SALVAR NO BANCO
     //
-    // Regras:
-    //  - Se NÃO tiver RADAR, mas tiver Receita, e o RADAR FALHOU (timeout / erro HTTP),
-    //    NÃO salva no banco (consulta parcial, só cadastral).
-    //  - Se tiver RADAR (mesmo que sem Receita) OU RADAR retornou "DADOS INDISPONÍVEIS (RADAR)",
-    //    considera resposta válida e salva normal.
+    // Regras mantidas:
+    //  - Se NÃO tiver RADAR, mas tiver Receita, e o RADAR FALHOU,
+    //    NÃO salva no banco (consulta só cadastral).
     let salvarNoBanco = true;
     if (!radar && receita && radarFalhou) {
       salvarNoBanco = false;
@@ -1012,7 +1055,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
     let linha = null;
 
     if (salvarNoBanco) {
-      // agora passamos também o usuário logado
+      // agora passamos também o usuário logado (pra preencher consultado_por_*)
       linha = await salvarConsulta(cnpj, dados, req.user);
       dataConsultaResposta = linha.data_consulta;
 
@@ -1029,8 +1072,8 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
         cnpj,
         origem,
         true,
-        radarFalhou
-          ? "consulta salva (RADAR falhou, mas dados parciais válidos)"
+        radarFalhou || receitaFalhou
+          ? "consulta salva (com partial/falha em uma das APIs, após retries)"
           : "consulta salva"
       );
     } else {

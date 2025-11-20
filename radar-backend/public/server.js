@@ -4,8 +4,8 @@ const isLocalHost =
   window.location.hostname === "127.0.0.1";
 
 const BACKEND_BASE_URL = isLocalHost
-  ? "http://localhost:3000"
-  : "https://radar-backend-omjv.onrender.com";
+  ? "http://localhost:3000" // quando você estiver testando local
+  : "https://testesssss-production.up.railway.app"; // produção no Railway
 
 function getToken() {
   return (

@@ -984,7 +984,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       radarFalhou = true;
     }
 
-    // Se o RADAR respondeu mas veio totalmente vazio → marcar como DADOS INDISPONÍVEIS
+    // Se o RADAR respondeu mas veio totalmente vazio → marcar como DADOS INDISPONÍVEISff
     if (radar && !radarFalhou) {
       const semCamposRadar =
         !radar.contribuinte &&

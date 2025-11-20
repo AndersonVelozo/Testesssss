@@ -969,6 +969,9 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
     let radarFalhou = false;
     let receitaFalhou = false;
 
+    // ⬇️ Declare aqui mesmo
+    let radarIncompleto = false;
+
     // RADAR com retry
     const radarResult = await tentarComRetry(
       () => consultaRadarAPI(cnpj),
@@ -976,11 +979,21 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       3,
       900
     );
+    // Verifica se o radar veio totalmente vazio
+    if (radar && !radarFalhou) {
+      const semCamposRadar =
+        !radar.contribuinte &&
+        !radar.situacao &&
+        !radar.dataSituacao &&
+        !radar.submodalidade;
 
-    if (radarResult.ok) {
-      radar = radarResult.valor;
-    } else {
-      radarFalhou = true;
+      if (semCamposRadar) {
+        radarIncompleto = true;
+        radar.situacao = "DADOS INDISPONÍVEIS";
+        radar.contribuinte = "";
+        radar.dataSituacao = "";
+        radar.submodalidade = "";
+      }
     }
 
     // ReceitaWS com retry (10x)
@@ -1011,8 +1024,9 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       });
     }
 
-    // 🔹 Fallback: se a RADAR respondeu (não deu erro), mas não trouxe
-    // NENHUM campo de habilitação, tratamos como "NÃO HABILITADA"
+    // coloque ISSO logo após declarar radar, radarFalhou, receitaFalhou:
+    // let radarIncompleto = false;
+
     if (radar && !radarFalhou) {
       const semCamposRadar =
         !radar.contribuinte &&
@@ -1021,7 +1035,11 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
         !radar.submodalidade;
 
       if (semCamposRadar) {
-        radar.situacao = "NÃO HABILITADA";
+        radarIncompleto = true;
+        radar.situacao = "DADOS INDISPONÍVEIS";
+        radar.contribuinte = "";
+        radar.dataSituacao = "";
+        radar.submodalidade = "";
       }
     }
 
@@ -1060,7 +1078,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
 
     // se radar respondeu mas receita falhou -> marca como incompleto
     let flagDadosIncompletos = false;
-    if (radar && receitaFalhou) {
+    if (radarIncompleto || radarFalhou || receitaFalhou) {
       flagDadosIncompletos = true;
     }
 

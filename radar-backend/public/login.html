@@ -27,16 +27,16 @@
     </div>
 
     <script>
-      // ====== CONFIG BACKEND (LOCAL x PRODUÇÃO) ======
+      // === CONFIG DO BACKEND (LOCAL x PRODUÇÃO) ===
       const isLocalHost =
         window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1";
 
-      // se estiver rodando tudo pelo backend (localhost:3000 / Render),
-      // essa URL bate certinho com o backend.js
+      // Em dev: chama localhost:3000
+      // Em produção: chama o Railway
       const BACKEND_BASE_URL = isLocalHost
         ? "http://localhost:3000"
-        : "https://radar-backend-omjv.onrender.com";
+        : "https://testesssss-production.up.railway.app";
 
       const emailInput = document.getElementById("email");
       const senhaInput = document.getElementById("senha");
@@ -64,19 +64,17 @@
             body: JSON.stringify({ email, senha }),
           });
 
-          const data = await resp.json().catch(() => ({}));
-
           if (!resp.ok) {
-            loginMsg.textContent = data.error || "Usuário ou senha inválidos.";
+            const err = await resp.json().catch(() => ({}));
+            loginMsg.textContent = err.error || "Usuário ou senha inválidos.";
             loginBtn.disabled = false;
             return;
           }
 
+          const data = await resp.json();
           const usuario = data.usuario || {};
 
-          // 🔐 salva o token sempre na MESMA chave usada pelo resto do sistema
-          localStorage.setItem("radar_token", data.token);
-          // mantém essas duas só por compatibilidade, se algum código antigo usar
+          // salva token e dados básicos do usuário
           localStorage.setItem("authToken", data.token);
           localStorage.setItem("usuarioNome", usuario.nome || "");
           localStorage.setItem("usuarioRole", usuario.role || "user");
@@ -84,7 +82,6 @@
           loginMsg.textContent =
             "Login realizado com sucesso! Redirecionando...";
 
-          // se for admin -> painel admin, senão -> tela principal
           const destino =
             (usuario.role || "").toLowerCase() === "admin"
               ? "admin.html"
@@ -102,16 +99,11 @@
 
       loginBtn.addEventListener("click", fazerLogin);
 
-      // Enter também faz login
       senhaInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          fazerLogin();
-        }
+        if (e.key === "Enter") fazerLogin();
       });
       emailInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          fazerLogin();
-        }
+        if (e.key === "Enter") fazerLogin();
       });
     </script>
   </body>

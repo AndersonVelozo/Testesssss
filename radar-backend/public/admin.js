@@ -5,7 +5,7 @@ const isLocalHost =
 
 const API_BASE = isLocalHost
   ? "http://localhost:3000"
-  : "https://radar-backend-omjv.onrender.com";
+  : "https://testesssss-production.up.railway.app";
 
 // ====== ELEMENTOS ======
 const inputNome = document.querySelector("#usuario-nome");
@@ -25,12 +25,12 @@ let usuarioEditandoId = null;
 
 // ====== AUTENTICAÇÃO ======
 function getToken() {
-  const t =
+  return (
+    localStorage.getItem("authToken") ||
     localStorage.getItem("radar_token") ||
     localStorage.getItem("token") ||
-    localStorage.getItem("authToken") ||
-    "";
-  return t;
+    ""
+  );
 }
 
 function requireAuth() {

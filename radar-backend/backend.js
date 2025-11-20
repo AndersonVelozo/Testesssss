@@ -586,7 +586,7 @@ app.post("/auth/login", async (req, res) => {
         role: user.role,
       },
       JWT_SECRET,
-      { expiresIn: "8h" }
+      { expiresIn: "60h" }
     );
 
     return res.json({

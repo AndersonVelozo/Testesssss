@@ -974,7 +974,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
     const radarResult = await tentarComRetry(
       () => consultaRadarAPI(cnpj),
       `RADAR (${cnpj})`,
-      3,
+      10,
       900
     );
 

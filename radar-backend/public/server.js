@@ -572,8 +572,12 @@ async function reconsultarErros() {
       (r.submodalidade && r.submodalidade.trim().length > 0)
     );
 
-  const temCadastro = (r) =>
-    !!(r.razaoSocial && r.razaoSocial.trim().length > 0);
+  const temCadastro = (r) => {
+    const nome = (r.razaoSocial || "").trim().toUpperCase();
+    if (!nome) return false; // vazio = sem cadastro
+    if (nome === "SEM INFORMAÇÃO") return false; // veio de falha na Receita
+    return true; // qualquer outra coisa = tem cadastro
+  };
 
   const isErroFlag = (r) => {
     const sit = (r.situacao || "").toUpperCase();

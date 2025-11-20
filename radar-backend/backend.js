@@ -968,8 +968,6 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
 
     let radarFalhou = false;
     let receitaFalhou = false;
-
-    // ⬇️ Declare aqui mesmo
     let radarIncompleto = false;
 
     // RADAR com retry
@@ -979,7 +977,14 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       3,
       900
     );
-    // Verifica se o radar veio totalmente vazio
+
+    if (radarResult.ok) {
+      radar = radarResult.valor;
+    } else {
+      radarFalhou = true;
+    }
+
+    // Se o RADAR respondeu mas veio totalmente vazio → marcar como DADOS INDISPONÍVEIS
     if (radar && !radarFalhou) {
       const semCamposRadar =
         !radar.contribuinte &&
@@ -1024,25 +1029,6 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       });
     }
 
-    // coloque ISSO logo após declarar radar, radarFalhou, receitaFalhou:
-    // let radarIncompleto = false;
-
-    if (radar && !radarFalhou) {
-      const semCamposRadar =
-        !radar.contribuinte &&
-        !radar.situacao &&
-        !radar.dataSituacao &&
-        !radar.submodalidade;
-
-      if (semCamposRadar) {
-        radarIncompleto = true;
-        radar.situacao = "DADOS INDISPONÍVEIS";
-        radar.contribuinte = "";
-        radar.dataSituacao = "";
-        radar.submodalidade = "";
-      }
-    }
-
     // textos padrão quando uma das APIs falha mesmo após retry
     const textoSemInfoRadar = radarFalhou ? "Sem informação" : "";
     const textoSemInfoReceita = receitaFalhou ? "Sem informação" : "";
@@ -1076,7 +1062,10 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       salvarNoBanco = false;
     }
 
-    // se radar respondeu mas receita falhou -> marca como incompleto
+    // marca como incompleto se:
+    // - radar veio vazio (radarIncompleto)
+    // - ou radar falhou
+    // - ou receita falhou
     let flagDadosIncompletos = false;
     if (radarIncompleto || radarFalhou || receitaFalhou) {
       flagDadosIncompletos = true;

@@ -897,7 +897,7 @@
 
       const BACKEND_BASE_URL = isLocalHost
         ? "http://localhost:3000"
-        : "https://radar-backend-omjv.onrender.com";
+        : window.location.origin;
 
       function getToken() {
         return localStorage.getItem("authToken") || "";
@@ -1148,26 +1148,40 @@
       ---------------------------------- */
 
       async function carregarUsuarios() {
+        const token = localStorage.getItem("authToken");
+
+        if (!token) {
+          console.warn("Sem token, redirecionando para login...");
+          alert("Sessão expirada. Faça login novamente.");
+          window.location.href = "login.html";
+          return;
+        }
+
         try {
           const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios`, {
+            method: "GET",
             headers: {
-              Authorization: "Bearer " + getToken(),
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
             },
           });
 
-          const data = await resp.json().catch(() => ({}));
-
           if (!resp.ok) {
-            console.error("Erro GET /admin/usuarios:", data);
-            throw new Error(data.error || "Erro ao buscar usuários");
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.error || "Erro ao carregar usuários");
           }
 
-          usuarios = Array.isArray(data) ? data : [];
-          paginaAtual = 1;
-          renderizarUsuarios();
-        } catch (err) {
-          console.error(err);
-          setFormMessage("Erro ao carregar usuários.", true);
+          const usuarios = await resp.json();
+
+          // aqui você renderiza a tabela normalmente
+          console.log("Usuários carregados:", usuarios);
+          // se o array vier vazio, mostra "Nenhum usuário cadastrado", mas SEM erro.
+        } catch (e) {
+          console.error("Falha ao carregar usuários:", e);
+          const msgEl =
+            document.getElementById("msgUsuarios") ||
+            document.getElementById("adminMsg");
+          if (msgEl) msgEl.textContent = "Erro ao carregar usuários.";
         }
       }
 
@@ -1367,7 +1381,9 @@
         INICIALIZAR
       ---------------------------------- */
 
-      window.onload = carregarUsuarios;
+      document.addEventListener("DOMContentLoaded", () => {
+        carregarUsuarios();
+      });
     </script>
   </body>
 </html>

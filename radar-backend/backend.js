@@ -975,7 +975,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       () => consultaRadarAPI(cnpj),
       `RADAR (${cnpj})`,
       10,
-      900
+      5000
     );
 
     if (radarResult.ok) {
@@ -1006,7 +1006,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       () => consultaReceitaWsAPI(cnpj),
       `ReceitaWS (${cnpj})`,
       10,
-      900
+      5000
     );
 
     if (receitaResult.ok) {

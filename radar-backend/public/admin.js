@@ -1,9 +1,11 @@
-// ====== CONFIG BACKEND (mesma origem no Render) ======
+// ====== CONFIG BACKEND (LOCAL x PRODUÇÃO) ======
 const isLocalHost =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1";
 
-const API_BASE = isLocalHost ? "http://localhost:3000" : "";
+const API_BASE = isLocalHost
+  ? "http://localhost:3000"
+  : "https://radar-backend-omjv.onrender.com";
 
 // ====== ELEMENTOS ======
 const inputNome = document.querySelector("#usuario-nome");
@@ -24,7 +26,10 @@ let usuarioEditandoId = null;
 // ====== AUTENTICAÇÃO ======
 function getToken() {
   const t =
-    localStorage.getItem("radar_token") || localStorage.getItem("token") || "";
+    localStorage.getItem("radar_token") ||
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken") ||
+    "";
   return t;
 }
 
@@ -49,7 +54,7 @@ function limparFormulario() {
   inputNome.value = "";
   inputEmail.value = "";
   inputSenha.value = "";
-  selectPerfil.value = "user"; // ou "Usuario"
+  selectPerfil.value = "user"; // padrão
   toggleAtivo.checked = true;
   togglePodeLote.checked = true;
   showErro("");
@@ -174,7 +179,7 @@ function preencherFormularioParaEdicao(u) {
   usuarioEditandoId = u.id;
   inputNome.value = u.nome || "";
   inputEmail.value = u.email || "";
-  inputSenha.value = ""; // só pra redefinir se quiser
+  inputSenha.value = "";
   selectPerfil.value = u.role === "admin" ? "admin" : "user";
   toggleAtivo.checked = !!u.ativo;
   togglePodeLote.checked = !!u.pode_lote;
@@ -190,7 +195,7 @@ async function salvarUsuario(e) {
       nome: inputNome.value.trim(),
       email: inputEmail.value.trim(),
       senha: inputSenha.value.trim(),
-      perfil: selectPerfil.value, // "admin" ou "user" / "Administrador"/"Usuário"
+      perfil: selectPerfil.value,
       status: toggleAtivo.checked,
       podeLote: togglePodeLote.checked,
     };

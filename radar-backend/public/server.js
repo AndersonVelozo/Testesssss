@@ -8,7 +8,12 @@ const BACKEND_BASE_URL = isLocalHost
   : "https://radar-backend-omjv.onrender.com";
 
 function getToken() {
-  return localStorage.getItem("authToken") || "";
+  return (
+    localStorage.getItem("radar_token") ||
+    localStorage.getItem("token") ||
+    localStorage.getItem("authToken") ||
+    ""
+  );
 }
 
 function getCurrentUserName() {
@@ -17,7 +22,6 @@ function getCurrentUserName() {
 
   try {
     const [, payloadBase64] = token.split(".");
-    // JWT usa base64url, convertemos
     const normalized = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
     const json = atob(normalized);
     const payload = JSON.parse(json);

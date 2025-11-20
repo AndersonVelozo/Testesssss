@@ -27,8 +27,16 @@
     </div>
 
     <script>
-      // backend e front agora estão no MESMO host (localhost:3000)
-      const BACKEND_BASE_URL = window.location.origin;
+      // ====== CONFIG BACKEND (LOCAL x PRODUÇÃO) ======
+      const isLocalHost =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1";
+
+      // se estiver rodando tudo pelo backend (localhost:3000 / Render),
+      // essa URL bate certinho com o backend.js
+      const BACKEND_BASE_URL = isLocalHost
+        ? "http://localhost:3000"
+        : "https://radar-backend-omjv.onrender.com";
 
       const emailInput = document.getElementById("email");
       const senhaInput = document.getElementById("senha");
@@ -56,17 +64,19 @@
             body: JSON.stringify({ email, senha }),
           });
 
+          const data = await resp.json().catch(() => ({}));
+
           if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            loginMsg.textContent = err.error || "Usuário ou senha inválidos.";
+            loginMsg.textContent = data.error || "Usuário ou senha inválidos.";
             loginBtn.disabled = false;
             return;
           }
 
-          const data = await resp.json();
           const usuario = data.usuario || {};
 
-          // salva token e dados básicos do usuário
+          // 🔐 salva o token sempre na MESMA chave usada pelo resto do sistema
+          localStorage.setItem("radar_token", data.token);
+          // mantém essas duas só por compatibilidade, se algum código antigo usar
           localStorage.setItem("authToken", data.token);
           localStorage.setItem("usuarioNome", usuario.nome || "");
           localStorage.setItem("usuarioRole", usuario.role || "user");

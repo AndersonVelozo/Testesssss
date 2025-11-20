@@ -574,9 +574,9 @@ async function reconsultarErros() {
 
   const temCadastro = (r) => {
     const nome = (r.razaoSocial || "").trim().toUpperCase();
-    if (!nome) return false; // vazio = sem cadastro
-    if (nome === "SEM INFORMAÇÃO") return false; // veio de falha na Receita
-    return true; // qualquer outra coisa = tem cadastro
+    if (!nome) return false;
+    if (nome === "SEM INFORMAÇÃO") return false;
+    return true;
   };
 
   const isErroFlag = (r) => {
@@ -588,20 +588,26 @@ async function reconsultarErros() {
     );
   };
 
+  // 🔹 apenas os realmente problemáticos
   const faltandoTudo = registros.filter(
     (r) => !temHabilitacao(r) && !temCadastro(r) && isErroFlag(r)
   );
 
   const faltandoRadar = registros.filter(
-    (r) => !temHabilitacao(r) && temCadastro(r)
+    (r) => !temHabilitacao(r) && temCadastro(r) && isErroFlag(r)
   );
 
   const faltandoReceita = registros.filter(
-    (r) => temHabilitacao(r) && !temCadastro(r)
+    (r) => temHabilitacao(r) && !temCadastro(r) && isErroFlag(r)
   );
 
-  const total =
-    faltandoTudo.length + faltandoRadar.length + faltandoReceita.length;
+  const paraReconsultar = [
+    ...faltandoTudo,
+    ...faltandoRadar,
+    ...faltandoReceita,
+  ];
+
+  const total = paraReconsultar.length;
 
   if (!total) {
     showInfoModal(
@@ -616,8 +622,9 @@ async function reconsultarErros() {
 
   async function atualizarRegistro(reg) {
     try {
+      // ⚠️ aqui o backend JÁ salva/atualiza no banco
       const dados = await consultarBackendCompleto(reg.cnpj, { force: true });
-      Object.assign(reg, dados);
+      Object.assign(reg, dados); // atualiza no array da tela
     } catch (err) {
       console.error("Erro ao reconsultar CNPJ", reg.cnpj, err);
     } finally {
@@ -626,10 +633,11 @@ async function reconsultarErros() {
     }
   }
 
-  for (const reg of [...faltandoTudo, ...faltandoRadar, ...faltandoReceita]) {
+  for (const reg of paraReconsultar) {
     await atualizarRegistro(reg);
   }
 
+  // redesenha a tabela com tudo (ok + corrigidos)
   renderizarTodos();
 }
 
@@ -655,11 +663,13 @@ async function reconsultarSelecionados() {
 
   for (const reg of registrosSelecionados) {
     try {
+      // ⚠️ força reconsulta e backend já grava no Postgres
       const dados = await consultarBackendCompleto(reg.cnpj, {
         force: true,
         origem: "lote",
       });
-      Object.assign(reg, dados);
+
+      Object.assign(reg, dados); // atualiza só o registro selecionado
     } catch (err) {
       console.error("Erro ao reconsultar selecionado", reg.cnpj, err);
     } finally {
@@ -668,6 +678,7 @@ async function reconsultarSelecionados() {
     }
   }
 
+  // redesenha tudo, mantendo linhas OK e atualizando só as selecionadas
   renderizarTodos();
 }
 

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Central de Chamados de TI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="ti-page">
+    <div class="ti-layout">
+      <!-- SIDEBAR -->
+      <aside class="ti-sidebar">
+        <div class="ti-sidebar-header">
+          <div class="ti-avatar">TI</div>
+          <div class="ti-entity">
+            <div class="ti-entity-name">Self-Service</div>
+            <div class="ti-entity-sub">Root entity</div>
+          </div>
+        </div>
+
+        <nav class="ti-nav">
+          <a href="#" class="ti-nav-item ti-nav-item-active">Home</a>
+          <a href="#create" class="ti-nav-item">Create a ticket</a>
+          <a href="#tickets" class="ti-nav-item">Tickets</a>
+          <a href="#reservations" class="ti-nav-item">Reservations</a>
+          <!-- FAQ propositalmente NÃO incluído -->
+        </nav>
+
+        <button
+          class="ti-back-portal"
+          onclick="window.location.href='home.html'"
+        >
+          ← Voltar ao Portal
+        </button>
+      </aside>
+
+      <!-- CONTEÚDO PRINCIPAL -->
+      <main class="ti-main">
+        <!-- HOME -->
+        <section id="home" class="ti-section">
+          <h1>Tickets</h1>
+          <div class="ti-status-grid">
+            <div class="ti-status-card">
+              <span class="ti-dot ti-dot-new"></span>
+              <span>New</span>
+              <strong>0</strong>
+            </div>
+            <div class="ti-status-card">
+              <span class="ti-dot ti-dot-processing"></span>
+              <span>Processing (assigned)</span>
+              <strong>0</strong>
+            </div>
+            <div class="ti-status-card">
+              <span class="ti-dot ti-dot-processing"></span>
+              <span>Processing (planned)</span>
+              <strong>0</strong>
+            </div>
+            <div class="ti-status-card">
+              <span class="ti-dot ti-dot-pending"></span>
+              <span>Pending</span>
+              <strong>0</strong>
+            </div>
+            <div class="ti-status-card">
+              <span class="ti-dot ti-dot-solved"></span>
+              <span>Solved</span>
+              <strong>0</strong>
+            </div>
+            <div class="ti-status-card">
+              <span class="ti-dot ti-dot-closed"></span>
+              <span>Closed</span>
+              <strong>0</strong>
+            </div>
+            <div class="ti-status-card">
+              <span class="ti-dot ti-dot-deleted"></span>
+              <span>Deleted</span>
+              <strong>0</strong>
+            </div>
+          </div>
+        </section>
+
+        <!-- CREATE TICKET (mock) -->
+        <section id="create" class="ti-section">
+          <h2>Create a ticket</h2>
+
+          <form class="ti-form">
+            <div class="ti-form-row">
+              <label>Type</label>
+              <select>
+                <option>Incident</option>
+                <option>Service Request</option>
+              </select>
+            </div>
+
+            <div class="ti-form-row">
+              <label>Category</label>
+              <select>
+                <option>-----</option>
+                <option>Hardware</option>
+                <option>Software</option>
+                <option>Network</option>
+              </select>
+            </div>
+
+            <div class="ti-form-row">
+              <label>Urgency</label>
+              <select>
+                <option>Medium</option>
+                <option>Low</option>
+                <option>High</option>
+                <option>Critical</option>
+              </select>
+            </div>
+
+            <div class="ti-form-row">
+              <label>Title</label>
+              <input type="text" placeholder="Resumo do incidente ou pedido" />
+            </div>
+
+            <div class="ti-form-row">
+              <label>Description</label>
+              <textarea
+                rows="6"
+                placeholder="Descreva o incidente ou solicitação com detalhes..."
+              ></textarea>
+            </div>
+
+            <div class="ti-form-row">
+              <label>Anexos</label>
+              <input type="file" multiple />
+            </div>
+
+            <button type="button" class="btn-primary">+ Submit message</button>
+          </form>
+        </section>
+
+        <!-- TICKETS (lista vazia) -->
+        <section id="tickets" class="ti-section">
+          <h2>Tickets</h2>
+          <p class="ti-empty">No item found</p>
+        </section>
+
+        <!-- RESERVATIONS (placeholder) -->
+        <section id="reservations" class="ti-section">
+          <h2>Reservations</h2>
+          <p class="ti-empty">
+            Nenhuma reserva cadastrada. Este módulo ainda é apenas ilustrativo.
+          </p>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

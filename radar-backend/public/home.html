@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Portal Alpha – Serviços</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="home-page">
+    <div class="home-overlay">
+      <header class="home-header">
+        <div class="home-logo">
+          <span class="home-logo-main">Alpha</span>
+          <span class="home-logo-sub">Portal</span>
+        </div>
+
+        <div class="home-user">
+          <span id="homeUserName" class="home-user-name">Usuário</span>
+          <button id="homeLogoutBtn" class="btn-ghost">Sair</button>
+        </div>
+      </header>
+
+      <main class="home-main">
+        <div class="home-title-block">
+          <h1>Bem-vindo(a) ao Portal de Serviços</h1>
+          <p class="home-subtitle">
+            Escolha abaixo o serviço que deseja utilizar.
+          </p>
+        </div>
+
+        <section class="home-card-grid">
+          <!-- CARD 1 – COLETOR RADAR -->
+          <article class="home-card" id="cardRadar">
+            <div class="home-card-icon">📊</div>
+            <h2>Coletor de Habilitação RADAR</h2>
+            <p>
+              Acesse o módulo de consultas de habilitação RADAR, com busca
+              unitária, lote via API e exportação para Excel.
+            </p>
+            <button class="btn-primary home-card-btn">
+              Acessar Coletor RADAR
+            </button>
+          </article>
+
+          <!-- CARD 2 – CHAMADOS TI -->
+          <article class="home-card" id="cardChamadosTi">
+            <div class="home-card-icon">🎫</div>
+            <h2>Chamados Internos de TI</h2>
+            <p>
+              Abrir chamados, acompanhar o status, registrar incidentes e
+              solicitações de serviço para o time de TI.
+            </p>
+            <button class="btn-secondary home-card-btn">
+              Acessar Central de Chamados
+            </button>
+          </article>
+
+          <!-- CARD 3 – RESERVAS / ATIVOS (placeholder) -->
+          <article class="home-card" id="cardReservas">
+            <div class="home-card-icon">📅</div>
+            <h2>Reservas de Equipamentos</h2>
+            <p>
+              (Em breve) Módulo para reservar notebooks, salas de reunião e
+              outros recursos de TI.
+            </p>
+            <button class="btn-secondary home-card-btn" disabled>
+              Em desenvolvimento
+            </button>
+          </article>
+
+          <!-- CARD 4 – PAINEL ADM (placeholder) -->
+          <article class="home-card" id="cardAdmin">
+            <div class="home-card-icon">🛠️</div>
+            <h2>Painel Administrativo</h2>
+            <p>
+              (Em breve) Área para administração de usuários, permissões e
+              relatórios do sistema.
+            </p>
+            <button class="btn-secondary home-card-btn" disabled>
+              Em desenvolvimento
+            </button>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="home.js"></script>
+  </body>
+</html>

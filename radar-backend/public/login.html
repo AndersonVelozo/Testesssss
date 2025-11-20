@@ -32,8 +32,6 @@
         window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1";
 
-      // Em dev: chama localhost:3000
-      // Em produção: chama o Railway
       const BACKEND_BASE_URL = isLocalHost
         ? "http://localhost:3000"
         : "https://testesssss-production.up.railway.app";
@@ -74,21 +72,21 @@
           const data = await resp.json();
           const usuario = data.usuario || {};
 
-          // salva token e dados básicos do usuário
+          // 🔐 salva token em todos os nomes usados no front
+          localStorage.setItem("radar_token", data.token);
+          localStorage.setItem("token", data.token);
           localStorage.setItem("authToken", data.token);
+
+          // informações extras do usuário (se quiser usar em telas)
           localStorage.setItem("usuarioNome", usuario.nome || "");
           localStorage.setItem("usuarioRole", usuario.role || "user");
 
           loginMsg.textContent =
             "Login realizado com sucesso! Redirecionando...";
 
-          const destino =
-            (usuario.role || "").toLowerCase() === "admin"
-              ? "admin.html"
-              : "index.html";
-
+          // 🔀 após login, sempre vai para o portal com os cards
           setTimeout(() => {
-            window.location.href = destino;
+            window.location.href = "home.html";
           }, 800);
         } catch (e) {
           console.error(e);

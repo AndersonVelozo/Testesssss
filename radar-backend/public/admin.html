@@ -1148,7 +1148,7 @@
       ---------------------------------- */
 
       async function carregarUsuarios() {
-        const token = localStorage.getItem("authToken");
+        const token = getToken();
 
         if (!token) {
           console.warn("Sem token, redirecionando para login...");
@@ -1166,22 +1166,22 @@
             },
           });
 
+          const data = await resp.json().catch(() => ({}));
+
           if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            throw new Error(err.error || "Erro ao carregar usuários");
+            throw new Error(data.error || "Erro ao carregar usuários");
           }
 
-          const usuarios = await resp.json();
-
-          // aqui você renderiza a tabela normalmente
-          console.log("Usuários carregados:", usuarios);
-          // se o array vier vazio, mostra "Nenhum usuário cadastrado", mas SEM erro.
+          // 👉 aqui usamos o array GLOBAL
+          usuarios = Array.isArray(data) ? data : [];
+          paginaAtual = 1;
+          renderizarUsuarios();
+          setFormMessage(""); // limpa msg de erro se tinha
         } catch (e) {
           console.error("Falha ao carregar usuários:", e);
-          const msgEl =
-            document.getElementById("msgUsuarios") ||
-            document.getElementById("adminMsg");
-          if (msgEl) msgEl.textContent = "Erro ao carregar usuários.";
+          setFormMessage("Erro ao carregar usuários.", true);
+          usuarios = [];
+          renderizarUsuarios();
         }
       }
 

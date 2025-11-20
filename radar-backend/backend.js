@@ -54,7 +54,10 @@ async function initDb() {
       regime_tributario TEXT,
       data_opcao_simples TEXT,
       capital_social    TEXT,
-      exportado_por     TEXT              -- 👈 NOVO
+      exportado_por     TEXT,
+      consultado_por_id   BIGINT,
+      consultado_por_nome TEXT,
+      atualizado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
     CREATE INDEX IF NOT EXISTS idx_consultas_radar_cnpj_data
@@ -83,9 +86,18 @@ async function initDb() {
     ALTER TABLE usuarios
       ADD COLUMN IF NOT EXISTS pode_lote BOOLEAN NOT NULL DEFAULT TRUE;
 
-    -- garante que a coluna exista mesmo em bancos já criados
+    -- garante colunas novas mesmo em bancos antigos
     ALTER TABLE consultas_radar
       ADD COLUMN IF NOT EXISTS exportado_por TEXT;
+
+    ALTER TABLE consultas_radar
+      ADD COLUMN IF NOT EXISTS consultado_por_id BIGINT;
+
+    ALTER TABLE consultas_radar
+      ADD COLUMN IF NOT EXISTS consultado_por_nome TEXT;
+
+    ALTER TABLE consultas_radar
+      ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
     -- 🔧 patch: se existir coluna 'senha' antiga NOT NULL, tornamos NULL
     DO $$
@@ -156,8 +168,59 @@ async function getConsultaRecente(cnpjLimpo) {
 }
 
 // grava nova consulta
-async function salvarConsulta(cnpjLimpo, dados) {
-  const sql = `
+// grava nova consulta OU atualiza a consulta do dia pro mesmo CNPJ
+async function salvarConsulta(cnpjLimpo, dados, usuario) {
+  const usuarioId = usuario?.id || null;
+  const usuarioNome = usuario?.nome || null;
+
+  const paramsBase = [
+    cnpjLimpo,
+    dados.contribuinte || null,
+    dados.situacao || null,
+    dados.dataSituacao || null,
+    dados.submodalidade || null,
+    dados.razaoSocial || null,
+    dados.nomeFantasia || null,
+    dados.municipio || null,
+    dados.uf || null,
+    dados.dataConstituicao || null,
+    dados.regimeTributario || null,
+    dados.dataOpcaoSimples || null,
+    dados.capitalSocial || null,
+    usuarioId,
+    usuarioNome,
+  ];
+
+  // 1º tenta atualizar registro do MESMO DIA
+  const sqlUpdate = `
+    UPDATE consultas_radar SET
+      contribuinte        = $2,
+      situacao            = $3,
+      data_situacao       = $4,
+      submodalidade       = $5,
+      razao_social        = $6,
+      nome_fantasia       = $7,
+      municipio           = $8,
+      uf                  = $9,
+      data_constituicao   = $10,
+      regime_tributario   = $11,
+      data_opcao_simples  = $12,
+      capital_social      = $13,
+      consultado_por_id   = $14,
+      consultado_por_nome = $15,
+      atualizado_em       = NOW()
+    WHERE cnpj = $1
+      AND data_consulta = CURRENT_DATE
+    RETURNING *;
+  `;
+
+  const updateResult = await pool.query(sqlUpdate, paramsBase);
+  if (updateResult.rows[0]) {
+    return updateResult.rows[0];
+  }
+
+  // 2º se não tinha registro do dia → insere um novo
+  const sqlInsert = `
     INSERT INTO consultas_radar (
       cnpj,
       data_consulta,
@@ -172,31 +235,20 @@ async function salvarConsulta(cnpjLimpo, dados) {
       data_constituicao,
       regime_tributario,
       data_opcao_simples,
-      capital_social
+      capital_social,
+      consultado_por_id,
+      consultado_por_nome,
+      atualizado_em
     ) VALUES (
       $1, CURRENT_DATE,
-      $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+      $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,
+      $14,$15, NOW()
     )
     RETURNING *;
   `;
-  const params = [
-    cnpjLimpo,
-    dados.contribuinte || null,
-    dados.situacao || null,
-    dados.dataSituacao || null,
-    dados.submodalidade || null,
-    dados.razaoSocial || null,
-    dados.nomeFantasia || null,
-    dados.municipio || null,
-    dados.uf || null,
-    dados.dataConstituicao || null,
-    dados.regimeTributario || null,
-    dados.dataOpcaoSimples || null,
-    dados.capitalSocial || null,
-  ];
 
-  const { rows } = await pool.query(sql, params);
-  return rows[0];
+  const insertResult = await pool.query(sqlInsert, paramsBase);
+  return insertResult.rows[0];
 }
 
 // apaga tudo que tiver mais de CACHE_DIAS dias
@@ -960,10 +1012,17 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
     let linha = null;
 
     if (salvarNoBanco) {
-      linha = await salvarConsulta(cnpj, dados);
+      // agora passamos também o usuário logado
+      linha = await salvarConsulta(cnpj, dados, req.user);
       dataConsultaResposta = linha.data_consulta;
 
-      console.log("✔ Consulta salva no banco:", linha.id, cnpj);
+      console.log(
+        "✔ Consulta salva/atualizada no banco:",
+        linha.id,
+        cnpj,
+        "por",
+        req.user?.nome || "desconhecido"
+      );
 
       await registrarLogConsulta(
         usuarioId,
@@ -1104,7 +1163,9 @@ app.get("/historico", authMiddleware, async (req, res) => {
       regimeTributario: linha.regime_tributario || "",
       dataOpcaoSimples: linha.data_opcao_simples || "",
       capitalSocial: linha.capital_social || "",
-      exportadoPor: linha.exportado_por || "", // 👈 devolve pro front se quiser usar
+      exportadoPor: linha.exportado_por || "",
+      consultadoPorId: linha.consultado_por_id || null,
+      consultadoPorNome: linha.consultado_por_nome || "",
     }));
 
     return res.json(resultado);

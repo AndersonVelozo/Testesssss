@@ -187,6 +187,56 @@
         </div>
       </div>
 
+      <!-- ========== MODAL HISTÓRICO ========== -->
+      <div id="historyOverlay" class="modal-overlay hidden">
+        <div class="modal">
+          <h2>Exportar histórico</h2>
+
+          <form id="historyForm" class="history-form">
+            <div class="field-group">
+              <label>Tipo de histórico:</label>
+              <div class="radio-row">
+                <label>
+                  <input type="radio" name="historyType" value="dia" checked />
+                  Apenas 1 dia
+                </label>
+                <label>
+                  <input type="radio" name="historyType" value="intervalo" />
+                  Intervalo de datas
+                </label>
+              </div>
+            </div>
+
+            <div class="field-group" id="historySingleDateGroup">
+              <label for="historySingleDate">Data (YYYY-MM-DD):</label>
+              <input type="date" id="historySingleDate" required />
+            </div>
+
+            <div
+              class="field-row"
+              id="historyIntervalGroup"
+              style="display: none"
+            >
+              <div class="field-group">
+                <label for="historyFromDate">Data inicial:</label>
+                <input type="date" id="historyFromDate" />
+              </div>
+              <div class="field-group">
+                <label for="historyToDate">Data final:</label>
+                <input type="date" id="historyToDate" />
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" id="historyCancel" class="btn secondary">
+                Cancelar
+              </button>
+              <button type="submit" class="btn primary">Exportar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- MODAL GENÉRICO: avisos / erros / mensagens -->
       <div id="infoModal" class="modal-overlay hidden">
         <div class="modal-card">

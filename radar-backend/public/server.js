@@ -792,8 +792,21 @@ exportExcelBtn.addEventListener("click", () => {
   );
 });
 
-// ---------- HISTÓRICO ----------
-historyBtn.addEventListener("click", async () => {
+// ---------- HISTÓRICO (MODAL BONITO) ----------
+
+const historyOverlay = document.getElementById("historyOverlay");
+const historyForm = document.getElementById("historyForm");
+const historyCancelBtn = document.getElementById("historyCancel");
+const historySingleDateGroup = document.getElementById(
+  "historySingleDateGroup"
+);
+const historyIntervalGroup = document.getElementById("historyIntervalGroup");
+const historySingleDate = document.getElementById("historySingleDate");
+const historyFromDate = document.getElementById("historyFromDate");
+const historyToDate = document.getElementById("historyToDate");
+
+// abre o modal
+historyBtn.addEventListener("click", () => {
   const token = getToken();
   if (!token) {
     showInfoModal(
@@ -803,77 +816,134 @@ historyBtn.addEventListener("click", async () => {
     return;
   }
 
-  const tipo = prompt(
-    "Digite 1 para histórico de um dia ou 2 para intervalo de datas:",
-    "1"
+  // reset básico
+  historyForm.reset();
+  // tipo padrão = "dia"
+  const radioDia = historyForm.querySelector(
+    'input[name="historyType"][value="dia"]'
   );
+  if (radioDia) radioDia.checked = true;
 
-  if (!tipo) return;
+  historySingleDateGroup.style.display = "block";
+  historyIntervalGroup.style.display = "none";
 
-  if (tipo === "1") {
-    const data = prompt("Informe a data (YYYY-MM-DD):", "");
-    if (!data) return;
+  historyOverlay.classList.remove("hidden");
+});
 
-    try {
-      const resp = await fetch(
-        `${BACKEND_BASE_URL}/historico?data=${encodeURIComponent(
-          data
-        )}&registrarExport=1`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const linhas = await resp.json();
-
-      if (!linhas.length) {
-        showInfoModal(
-          "Sem dados",
-          "Não há registros para a data informada no histórico."
-        );
-        return;
-      }
-
-      exportarHistoricoExcel(linhas, `historico_${data}`);
-    } catch (err) {
-      console.error("Erro histórico (dia único):", err);
-      showInfoModal(
-        "Erro histórico",
-        "Não foi possível carregar o histórico para a data informada."
-      );
-    }
-  } else if (tipo === "2") {
-    const from = prompt("Data inicial (YYYY-MM-DD):", "");
-    const to = prompt("Data final (YYYY-MM-DD):", "");
-    if (!from || !to) return;
-
-    try {
-      const url = `${BACKEND_BASE_URL}/historico?from=${encodeURIComponent(
-        from
-      )}&to=${encodeURIComponent(to)}&registrarExport=1`;
-
-      const resp = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const linhas = await resp.json();
-
-      if (!linhas.length) {
-        showInfoModal("Sem dados", "Não há registros no intervalo informado.");
-        return;
-      }
-
-      exportarHistoricoExcel(linhas, `historico_${from}_a_${to}`);
-    } catch (err) {
-      console.error("Erro histórico (intervalo):", err);
-      showInfoModal(
-        "Erro histórico",
-        "Não foi possível carregar o histórico para o intervalo informado."
-      );
+// troca entre "dia" e "intervalo"
+historyForm.addEventListener("change", (e) => {
+  if (e.target.name === "historyType") {
+    if (e.target.value === "dia") {
+      historySingleDateGroup.style.display = "block";
+      historyIntervalGroup.style.display = "none";
+      historySingleDate.required = true;
+      historyFromDate.required = false;
+      historyToDate.required = false;
+    } else {
+      historySingleDateGroup.style.display = "none";
+      historyIntervalGroup.style.display = "flex";
+      historySingleDate.required = false;
+      historyFromDate.required = true;
+      historyToDate.required = true;
     }
   }
 });
 
+// cancelar modal
+historyCancelBtn.addEventListener("click", () => {
+  historyOverlay.classList.add("hidden");
+});
+
+// ESC fecha o modal de histórico também (junta com o que você já tem)
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    historyOverlay.classList.add("hidden");
+    // (deixe aqui também os outros modais se já tiver)
+  }
+});
+
+// submit do formulário de histórico
+historyForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const token = getToken();
+  if (!token) {
+    showInfoModal(
+      "Sessão expirada",
+      "Você precisa estar logado para consultar o histórico."
+    );
+    return;
+  }
+
+  const tipo = historyForm.querySelector(
+    'input[name="historyType"]:checked'
+  )?.value;
+
+  try {
+    let url;
+    let nomeBaseArquivo;
+
+    if (tipo === "dia") {
+      const data = historySingleDate.value;
+      if (!data) {
+        showInfoModal("Campo obrigatório", "Informe a data.");
+        return;
+      }
+
+      url = `${BACKEND_BASE_URL}/historico?data=${encodeURIComponent(
+        data
+      )}&registrarExport=1`;
+      nomeBaseArquivo = `historico_${data}`;
+    } else {
+      const from = historyFromDate.value;
+      const to = historyToDate.value;
+
+      if (!from || !to) {
+        showInfoModal(
+          "Campos obrigatórios",
+          "Informe a data inicial e a data final."
+        );
+        return;
+      }
+
+      url = `${BACKEND_BASE_URL}/historico?from=${encodeURIComponent(
+        from
+      )}&to=${encodeURIComponent(to)}&registrarExport=1`;
+      nomeBaseArquivo = `historico_${from}_a_${to}`;
+    }
+
+    const resp = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!resp.ok) {
+      console.error("HTTP erro histórico:", resp.status);
+      throw new Error(`HTTP ${resp.status}`);
+    }
+
+    const linhas = await resp.json();
+
+    if (!linhas.length) {
+      showInfoModal(
+        "Sem dados",
+        "Não há registros para o período informado no histórico."
+      );
+      return;
+    }
+
+    exportarHistoricoExcel(linhas, nomeBaseArquivo);
+
+    historyOverlay.classList.add("hidden");
+  } catch (err) {
+    console.error("Erro histórico:", err);
+    showInfoModal(
+      "Erro histórico",
+      "Não foi possível carregar o histórico para o período informado."
+    );
+  }
+});
+
+// mesma função de antes, só reaproveitada
 function exportarHistoricoExcel(linhas, nomeBase) {
   const data = [];
   data.push([
@@ -928,7 +998,7 @@ function exportarHistoricoExcel(linhas, nomeBase) {
 
   showInfoModal(
     "Histórico exportado",
-    `Arquivo Excel gerado com sucesso: ${nomeArquivo.trim()}.xlsx`
+    `Arquivo Excel gerado com sucesso:<br><strong>${nomeArquivo.trim()}.xlsx</strong>`
   );
 }
 

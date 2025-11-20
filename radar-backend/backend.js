@@ -261,15 +261,13 @@ function formatarCapitalSocial(valorBruto) {
 // body JSON
 app.use(express.json());
 
-// CORS
+// CORS – liberar geral (para não ter mais dor de cabeça agora)
 app.use(
   cors({
-    origin: [
-      "http://127.0.0.1:5500",
-      "http://localhost:5500",
-      "https://andersonvelozo.github.io",
-      "https://testessssss.onrender.com", // 👈 ADICIONADO
-    ],
+    origin: (origin, callback) => {
+      // aceita qualquer origem (inclui localhost, Render, etc.)
+      callback(null, true);
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })

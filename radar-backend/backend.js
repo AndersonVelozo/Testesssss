@@ -258,20 +258,22 @@ function formatarCapitalSocial(valorBruto) {
 
 // ========== MIDDLEWARES ==========
 
+// ========== MIDDLEWARES ==========
+
 // body JSON
 app.use(express.json());
 
-// CORS – liberar geral (para não ter mais dor de cabeça agora)
+// CORS ABERTO (pra resolver de vez o problema entre Render x Render)
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // aceita qualquer origem (inclui localhost, Render, etc.)
-      callback(null, true);
-    },
+    origin: true, // reflete qualquer origem
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
+// garante que o preflight OPTIONS receba CORS também
+app.options("*", cors());
 
 // Middleware de autenticação (qualquer usuário logado)
 function authMiddleware(req, res, next) {

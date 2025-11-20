@@ -1,4 +1,4 @@
-// backend.js (Node/Express + Postgres + Cache 90 dias + Auth + Logs + Painel ADM)
+// backend.js (Node/Express + Postgres + Cache + Auth + Logs + Painel ADM)
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
@@ -57,7 +57,8 @@ async function initDb() {
       exportado_por     TEXT,
       consultado_por_id   BIGINT,
       consultado_por_nome TEXT,
-      atualizado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      atualizado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      dados_incompletos   BOOLEAN     NOT NULL DEFAULT FALSE
     );
 
     CREATE INDEX IF NOT EXISTS idx_consultas_radar_cnpj_data
@@ -98,6 +99,9 @@ async function initDb() {
 
     ALTER TABLE consultas_radar
       ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+    ALTER TABLE consultas_radar
+      ADD COLUMN IF NOT EXISTS dados_incompletos BOOLEAN NOT NULL DEFAULT FALSE;
 
     -- 🔧 patch: se existir coluna 'senha' antiga NOT NULL, tornamos NULL
     DO $$
@@ -167,7 +171,6 @@ async function getConsultaRecente(cnpjLimpo) {
   return rows[0] || null;
 }
 
-// grava nova consulta
 // grava nova consulta OU atualiza a consulta do dia pro mesmo CNPJ
 async function salvarConsulta(cnpjLimpo, dados, usuario) {
   const usuarioId = usuario?.id || null;
@@ -251,15 +254,31 @@ async function salvarConsulta(cnpjLimpo, dados, usuario) {
   return insertResult.rows[0];
 }
 
-// apaga tudo que tiver mais de CACHE_DIAS dias
-async function limparConsultasAntigas() {
+// limpeza avançada com regras por tipo de habilitação
+async function limparConsultasAntigasAvancado() {
   const sql = `
     DELETE FROM consultas_radar
-    WHERE data_consulta < CURRENT_DATE - INTERVAL '${CACHE_DIAS} days';
+    WHERE
+      (
+        situacao = 'NÃO HABILITADA'
+        AND data_consulta < CURRENT_DATE - INTERVAL '90 days'
+      )
+      OR (
+        submodalidade ILIKE '%50%'
+        AND data_consulta < CURRENT_DATE - INTERVAL '120 days'
+      )
+      OR (
+        submodalidade ILIKE '%150%'
+        AND data_consulta < CURRENT_DATE - INTERVAL '120 days'
+      )
+      OR (
+        submodalidade ILIKE '%ILIMITADA%'
+        AND data_consulta < CURRENT_DATE - INTERVAL '560 days'
+      );
   `;
   const { rowCount } = await pool.query(sql);
   if (rowCount > 0) {
-    console.log(`🧹 Limpeza: ${rowCount} registro(s) antigo(s) removido(s).`);
+    console.log(`🧹 Limpeza avançada: ${rowCount} registros removidos.`);
   }
 }
 
@@ -320,7 +339,6 @@ async function tentarComRetry(fn, descricao, maxTentativas = 3, delayMs = 800) {
   for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
     try {
       const resp = await fn();
-      // se a função retornar algo "truthy", consideramos sucesso
       if (resp) {
         if (tentativa > 1) {
           console.log(
@@ -570,7 +588,6 @@ app.post("/auth/login", async (req, res) => {
 
     console.log("Senha no banco:", user.senha_hash);
 
-    // Comparação simples
     if (String(user.senha_hash).trim() !== String(senha).trim()) {
       console.log("Senha incorreta!");
       return res.status(401).json({ error: "Usuário ou senha inválidos." });
@@ -611,8 +628,6 @@ app.get("/auth/me", authMiddleware, (req, res) => {
 
 // ================= PAINEL ADMIN – CRUD USUÁRIOS =================
 
-// ================= PAINEL ADMIN – CRUD USUÁRIOS =================
-
 // Listar todos os usuários (somente ADM)
 app.get(
   "/admin/usuarios",
@@ -648,11 +663,11 @@ app.post(
         email,
         senha,
         role,
-        perfil, // se o front mandar "perfil"
+        perfil,
         ativo,
-        status, // se o front mandar "status"
+        status,
         pode_lote,
-        podeLote, // se vier em camelCase
+        podeLote,
       } = req.body || {};
 
       if (!nome || !email || !senha) {
@@ -661,7 +676,6 @@ app.post(
           .json({ error: "Nome, e-mail e senha são obrigatórios." });
       }
 
-      // normaliza role/perfil
       const roleInput = String(role || perfil || "")
         .toLowerCase()
         .trim();
@@ -673,14 +687,12 @@ app.post(
           ? "admin"
           : "user";
 
-      // normaliza ativo/status
       const ativoRaw = ativo ?? status ?? true;
       const ativoFinal =
         typeof ativoRaw === "boolean"
           ? ativoRaw
           : String(ativoRaw).toLowerCase() !== "false";
 
-      // normaliza pode_lote/podeLote
       const podeLoteRaw = pode_lote ?? podeLote ?? true;
       const podeLoteFinal =
         typeof podeLoteRaw === "boolean"
@@ -696,7 +708,7 @@ app.post(
       const { rows } = await pool.query(sql, [
         nome,
         email,
-        String(senha).trim(), // senha em texto simples (compatível com /auth/login)
+        String(senha).trim(),
         roleFinal,
         ativoFinal,
         podeLoteFinal,
@@ -708,7 +720,6 @@ app.post(
       console.error("Erro POST /admin/usuarios:", err);
 
       if (err.code === "23505") {
-        // unique_violation (email)
         return res
           .status(400)
           .json({ error: "Já existe um usuário com esse e-mail." });
@@ -904,7 +915,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
     }
 
     // 🔹 1) Tenta cache primeiro, se NÃO for "force"
-    await limparConsultasAntigas();
+    await limparConsultasAntigasAvancado();
 
     if (!force) {
       const cache = await getConsultaRecente(cnpj);
@@ -972,7 +983,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       radarFalhou = true;
     }
 
-    // ReceitaWS com retry
+    // ReceitaWS com retry (10x)
     const receitaResult = await tentarComRetry(
       () => consultaReceitaWsAPI(cnpj),
       `ReceitaWS (${cnpj})`,
@@ -1016,7 +1027,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
 
     // textos padrão quando uma das APIs falha mesmo após retry
     const textoSemInfoRadar = radarFalhou ? "Sem informação" : "";
-    const textoSemInfoReceita = receitaFalhou ? "Sem informação" : ""; // aqui deixo vazio mesmo
+    const textoSemInfoReceita = receitaFalhou ? "Sem informação" : "";
 
     const dados = {
       // Campos de habilitação (RADAR)
@@ -1042,22 +1053,29 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
     };
 
     // 🔹 3) DECIDE SE VAI SALVAR NO BANCO
-    //
-    // Regras mantidas:
-    //  - Se NÃO tiver RADAR, mas tiver Receita, e o RADAR FALHOU,
-    //    NÃO salva no banco (consulta só cadastral).
     let salvarNoBanco = true;
     if (!radar && receita && radarFalhou) {
       salvarNoBanco = false;
     }
 
-    let dataConsultaResposta = new Date().toISOString().slice(0, 10); // fallback
+    // se radar respondeu mas receita falhou -> marca como incompleto
+    let flagDadosIncompletos = false;
+    if (radar && receitaFalhou) {
+      flagDadosIncompletos = true;
+    }
+
+    let dataConsultaResposta = new Date().toISOString().slice(0, 10);
     let linha = null;
 
     if (salvarNoBanco) {
-      // agora passamos também o usuário logado (pra preencher consultado_por_*)
       linha = await salvarConsulta(cnpj, dados, req.user);
       dataConsultaResposta = linha.data_consulta;
+
+      // atualiza flag de dados incompletos
+      await pool.query(
+        "UPDATE consultas_radar SET dados_incompletos = $2 WHERE id = $1",
+        [linha.id, flagDadosIncompletos]
+      );
 
       console.log(
         "✔ Consulta salva/atualizada no banco:",
@@ -1166,7 +1184,6 @@ app.get("/historico", authMiddleware, async (req, res) => {
 
     const { rows } = await pool.query(sql, params);
 
-    // 👇 Se for exportação, grava quem exportou no banco
     if (deveRegistrarExport && req.user && req.user.nome) {
       const nomeUsuario = req.user.nome;
       let updateSql;
@@ -1217,6 +1234,85 @@ app.get("/historico", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Erro ao consultar histórico" });
   }
 });
+
+// ================= CORRIGIR REGISTROS INCOMPLETOS (apenas ADMIN) =================
+app.get(
+  "/corrigir-erros",
+  authMiddleware,
+  authMiddlewareAdmin,
+  async (req, res) => {
+    try {
+      const sql = `
+        SELECT *
+        FROM consultas_radar
+        WHERE dados_incompletos = TRUE
+        ORDER BY data_consulta DESC;
+      `;
+      const { rows } = await pool.query(sql);
+
+      if (rows.length === 0) {
+        return res.json({ message: "Nenhum registro incompleto encontrado." });
+      }
+
+      const corrigidos = [];
+
+      for (const item of rows) {
+        const receitaResult = await tentarComRetry(
+          () => consultaReceitaWsAPI(item.cnpj),
+          `ReceitaWS corrigir ${item.cnpj}`,
+          10,
+          900
+        );
+
+        if (!receitaResult.ok) {
+          console.log("❌ Falha ao corrigir:", item.cnpj);
+          continue;
+        }
+
+        const r = receitaResult.valor;
+
+        await pool.query(
+          `
+          UPDATE consultas_radar
+          SET
+            razao_social = $2,
+            nome_fantasia = $3,
+            municipio = $4,
+            uf = $5,
+            data_constituicao = $6,
+            regime_tributario = $7,
+            data_opcao_simples = $8,
+            capital_social = $9,
+            dados_incompletos = FALSE,
+            atualizado_em = NOW()
+          WHERE id = $1
+          `,
+          [
+            item.id,
+            r.razaoSocial,
+            r.nomeFantasia,
+            r.municipio,
+            r.uf,
+            r.dataConstituicao,
+            r.regimeTributario,
+            r.dataOpcaoSimples,
+            r.capitalSocial,
+          ]
+        );
+
+        corrigidos.push(item.cnpj);
+      }
+
+      return res.json({
+        message: "Correção concluída.",
+        corrigidos,
+      });
+    } catch (err) {
+      console.error("Erro /corrigir-erros:", err);
+      return res.status(500).json({ error: "Erro ao corrigir registros." });
+    }
+  }
+);
 
 // ========== SOBE O SERVIDOR ==========
 initDb()

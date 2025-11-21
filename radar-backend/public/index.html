@@ -1,289 +1,296 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <title>Habilitação RADAR – Coletor Semi-Automatizado</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- CSS externo -->
-    <link rel="stylesheet" href="style.css" />
+<head>
+  <meta charset="utf-8" />
+  <title>Habilitação RADAR – Coletor Semi-Automatizado</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- SheetJS para gerar Excel e ler planilha importada -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Coletor de Habilitação RADAR (semi-automatizado)</h1>
-      <p class="subtitle">
-        • Campo de CNPJ acima: consulta <strong>unitária</strong> (você consulta
-        na Receita, copia o resultado e cola ao lado).<br />
-        • Botão <strong>“🌐 Abrir Receita (consulta RADAR)”</strong>: abrir o
-        site oficial da Receita para consulta manual (CAPTCHA).<br />
-        • Campo de <strong>importar planilha</strong> abaixo: consulta em
-        <strong>lote</strong> via API (Infosimples) a partir de um Excel com
-        apenas a coluna de CNPJ.
-      </p>
+  <!-- CSS externo -->
+  <link rel="stylesheet" href="style.css" />
 
-      <div class="grid">
-        <!-- Lado esquerdo: CNPJ + botões -->
-        <div>
-          <label for="cnpj">CNPJ (apenas números ou formatado)</label>
-          <input
-            id="cnpj"
-            placeholder="Ex: 48.136.358/0001-72 ou 48136358000172"
-          />
+  <!-- SheetJS para gerar Excel e ler planilha importada -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-          <div class="btn-row" style="margin-top: 10px">
-            <!-- ABRE O SITE DA RECEITA -->
-            <button type="button" class="btn-secondary" id="openReceita">
-              🌐 Abrir Receita (consulta RADAR)
-            </button>
-          </div>
 
-          <!-- Campo para importar planilha (lote) -->
-          <label style="margin-top: 16px"
-            >Importar planilha de CNPJs (lote)</label
-          >
-          <div class="btn-row">
-            <button type="button" class="btn-secondary" id="importExcelBtn">
-              📂 Importar planilha de CNPJs (via API)
-            </button>
-            <input
-              type="file"
-              id="fileInput"
-              accept=".xlsx,.xls,.csv"
-              style="display: none"
-            />
-          </div>
+  <style>
+    body.radar-page {
+      margin: 0;
+      min-height: 100svh;
+      padding: 24px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      color: #e5e7eb;
 
-          <!-- Progresso das consultas em lote -->
-          <div id="loteContainer">
-            <div id="loteStatus" class="progress-text">
-              Nenhuma consulta em lote em andamento.
-            </div>
-            <div class="progress-bar-wrapper">
-              <div
-                id="loteProgressBar"
-                class="progress-bar-inner"
-                style="width: 0%"
-              ></div>
-            </div>
-          </div>
+      background-image: radial-gradient(circle at top,
+          rgba(59, 130, 246, 0.35),
+          transparent 55%),
+        radial-gradient(circle at bottom, rgba(16, 185, 129, 0.25), transparent 80%),
+        url("./img/quem-pode-se-habilitar-no-radar-descubra-agora-mesmo.webp");
+
+      background-size: auto, auto, cover;
+      background-position: center top, center bottom, center 82%;
+      background-repeat: no-repeat, no-repeat, no-repeat;
+      background-attachment: fixed, fixed, fixed;
+      background-color: #020617;
+      box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.35);
+    }
+  </style>
+
+</head>
+
+<body class="radar-page">
+  <div class="container">
+    <h1>Coletor de Habilitação RADAR (semi-automatizado)</h1>
+    <p class="subtitle">
+      • Campo de CNPJ acima: consulta <strong>unitária</strong> (você consulta
+      na Receita, copia o resultado e cola ao lado).<br />
+      • Botão <strong>“🌐 Abrir Receita (consulta RADAR)”</strong>: abrir o
+      site oficial da Receita para consulta manual (CAPTCHA).<br />
+      • Campo de <strong>importar planilha</strong> abaixo: consulta em
+      <strong>lote</strong> via API (Infosimples) a partir de um Excel com
+      apenas a coluna de CNPJ.
+    </p>
+
+    <div class="grid">
+      <!-- Lado esquerdo: CNPJ + botões -->
+      <div>
+        <label for="cnpj">CNPJ (apenas números ou formatado)</label>
+        <input id="cnpj" placeholder="Ex: 48.136.358/0001-72 ou 48136358000172" />
+
+        <div class="btn-row" style="margin-top: 10px">
+          <!-- ABRE O SITE DA RECEITA -->
+          <button type="button" class="btn-secondary" id="openReceita">
+            🌐 Abrir Receita (consulta RADAR)
+          </button>
         </div>
 
-        <!-- Lado direito: textarea para colar o resultado -->
-        <div>
-          <label for="rawText"
-            >Cole aqui o texto da página de resultado da Receita (consulta
-            unitária)</label
-          >
-          <textarea
-            id="rawText"
-            placeholder="Depois de consultar o CNPJ na Receita, selecione tudo (Ctrl+A), copie (Ctrl+C) e cole aqui (Ctrl+V)."
-          ></textarea>
+        <!-- Campo para importar planilha (lote) -->
+        <label style="margin-top: 16px">Importar planilha de CNPJs (lote)</label>
+        <div class="btn-row">
+          <button type="button" class="btn-secondary" id="importExcelBtn">
+            📂 Importar planilha de CNPJs (via API)
+          </button>
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none" />
         </div>
-      </div>
 
-      <div class="btn-row">
-        <button type="button" class="btn-primary" id="extractAdd">
-          ➕ Extrair e adicionar linha
-        </button>
-        <button type="button" class="btn-secondary" id="clearTable">
-          🧹 Limpar tabela
-        </button>
-        <button type="button" class="btn-secondary" id="exportExcel">
-          📊 Exportar para Excel
-        </button>
-        <button type="button" class="btn-secondary" id="retryErrors">
-          🔁 Reconsultar erros
-        </button>
-        <button type="button" class="btn-secondary" id="retrySelected">
-          🔁 Consultar selecionados
-        </button>
-        <button type="button" class="btn-secondary" id="historyBtn">
-          📆 Consultar histórico
-        </button>
-      </div>
-
-      <!-- MODAL: Confirmar importação da planilha -->
-      <div id="confirmImportOverlay" class="modal-overlay hidden">
-        <div class="modal-card">
-          <h2 class="modal-title">Importar planilha?</h2>
-          <p id="confirmImportText" class="modal-text">
-            Foram encontrados X CNPJs. Deseja iniciar a consulta em lote (via
-            API)?
-          </p>
-
-          <div class="modal-actions">
-            <button id="cancelImport" class="btn-secondary modal-btn">
-              Cancelar
-            </button>
-            <button id="confirmImport" class="btn-primary modal-btn">
-              Sim, iniciar
-            </button>
+        <!-- Progresso das consultas em lote -->
+        <div id="loteContainer">
+          <div id="loteStatus" class="progress-text">
+            Nenhuma consulta em lote em andamento.
+          </div>
+          <div class="progress-bar-wrapper">
+            <div id="loteProgressBar" class="progress-bar-inner" style="width: 0%"></div>
           </div>
         </div>
       </div>
 
-      <!-- MODAL: Confirmar limpeza da tabela -->
-      <div id="confirmClearOverlay" class="modal-overlay hidden">
-        <div class="modal-card">
-          <h2 class="modal-title">Limpar tabela?</h2>
-          <p class="modal-text">
-            Ao limpar a tabela,
-            <strong>todos os registros exibidos aqui serão apagados</strong>,
-            incluindo os dados salvos no navegador (localStorage). Isso
-            <strong>não afeta a Receita Federal</strong>, apenas o histórico
-            desta tela. Essa ação não pode ser desfeita.
-          </p>
-
-          <div class="modal-actions">
-            <button id="cancelClear" class="btn-secondary modal-btn">
-              Cancelar
-            </button>
-            <button id="confirmClear" class="btn-primary modal-btn">
-              Sim, limpar tudo
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- MODAL: Reconsultar erros -->
-      <div id="confirmRetryOverlay" class="modal-overlay hidden">
-        <div class="modal-card">
-          <h2 class="modal-title">Reconsultar erros?</h2>
-
-          <p class="modal-text">
-            Os registros com problemas serão consultados novamente, usando as
-            APIs RADAR e ReceitaWS conforme o tipo de falha:
-          </p>
-
-          <ul class="modal-list">
-            <li>
-              <strong>Sem habilitação e sem cadastro:</strong> RADAR + ReceitaWS
-            </li>
-            <li>
-              <strong>Com cadastro, mas sem habilitação:</strong> apenas RADAR
-            </li>
-            <li>
-              <strong>Com habilitação, mas sem cadastro:</strong> apenas
-              ReceitaWS
-            </li>
-          </ul>
-
-          <p class="modal-text">
-            Este processo pode levar alguns minutos dependendo da quantidade de
-            CNPJs.
-          </p>
-
-          <div class="modal-actions">
-            <button id="cancelRetry" class="btn-secondary modal-btn">
-              Cancelar
-            </button>
-            <button id="confirmRetry" class="btn-primary modal-btn">
-              Sim, reconsultar
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ========== MODAL HISTÓRICO ========== -->
-      <div id="historyOverlay" class="modal-overlay hidden">
-        <div class="modal">
-          <h2>Exportar histórico</h2>
-
-          <form id="historyForm" class="history-form">
-            <div class="field-group">
-              <label>Tipo de histórico:</label>
-              <div class="radio-row">
-                <label>
-                  <input type="radio" name="historyType" value="dia" checked />
-                  Apenas 1 dia
-                </label>
-                <label>
-                  <input type="radio" name="historyType" value="intervalo" />
-                  Intervalo de datas
-                </label>
-              </div>
-            </div>
-
-            <div class="field-group" id="historySingleDateGroup">
-              <label for="historySingleDate">Data (YYYY-MM-DD):</label>
-              <input type="date" id="historySingleDate" required />
-            </div>
-
-            <div
-              class="field-row"
-              id="historyIntervalGroup"
-              style="display: none"
-            >
-              <div class="field-group">
-                <label for="historyFromDate">Data inicial:</label>
-                <input type="date" id="historyFromDate" />
-              </div>
-              <div class="field-group">
-                <label for="historyToDate">Data final:</label>
-                <input type="date" id="historyToDate" />
-              </div>
-            </div>
-
-            <div class="modal-actions">
-              <button type="button" id="historyCancel" class="btn secondary">
-                Cancelar
-              </button>
-              <button type="submit" class="btn primary">Exportar</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- MODAL GENÉRICO: avisos / erros / mensagens -->
-      <div id="infoModal" class="modal-overlay hidden">
-        <div class="modal-card">
-          <h2 id="infoModalTitle" class="modal-title">Aviso</h2>
-          <p id="infoModalMessage" class="modal-text">Mensagem genérica.</p>
-
-          <div class="modal-actions" style="justify-content: center">
-            <button id="infoModalClose" class="btn-primary modal-btn">
-              OK, entendi
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="table-wrapper">
-        <table id="resultTable">
-          <thead>
-            <tr>
-              <th style="width: 32px; text-align: center">Sel.</th>
-              <th>Data da Consulta</th>
-              <th>CNPJ</th>
-              <th>Contribuinte</th>
-              <th>Situação da Habilitação</th>
-              <th>Data da Situação</th>
-              <th>Submodalidade</th>
-              <th>Razão Social</th>
-              <th>Nome Fantasia</th>
-              <th>Município</th>
-              <th>UF</th>
-              <th>Data de Constituição</th>
-              <th>Regime Tributário</th>
-              <th>Data Opção Simples</th>
-              <th>Capital Social</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="no-data-row">
-              <td colspan="15" class="no-data">
-                Nenhum registro adicionado ainda
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Lado direito: textarea para colar o resultado -->
+      <div>
+        <label for="rawText">Cole aqui o texto da página de resultado da Receita (consulta
+          unitária)</label>
+        <textarea id="rawText"
+          placeholder="Depois de consultar o CNPJ na Receita, selecione tudo (Ctrl+A), copie (Ctrl+C) e cole aqui (Ctrl+V)."></textarea>
       </div>
     </div>
 
-    <!-- JS do front separado -->
-    <script src="./server.js"></script>
-  </body>
+    <div class="btn-row">
+      <button type="button" class="btn-primary" id="extractAdd">
+        ➕ Extrair e adicionar linha
+      </button>
+      <button type="button" class="btn-secondary" id="clearTable">
+        🧹 Limpar tabela
+      </button>
+      <button type="button" class="btn-secondary" id="exportExcel">
+        📊 Exportar para Excel
+      </button>
+      <button type="button" class="btn-secondary" id="retryErrors">
+        🔁 Reconsultar erros
+      </button>
+      <button type="button" class="btn-secondary" id="retrySelected">
+        🔁 Consultar selecionados
+      </button>
+      <button type="button" class="btn-secondary" id="historyBtn">
+        📆 Consultar histórico
+      </button>
+    </div>
+
+    <!-- MODAL: Confirmar importação da planilha -->
+    <div id="confirmImportOverlay" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h2 class="modal-title">Importar planilha?</h2>
+        <p id="confirmImportText" class="modal-text">
+          Foram encontrados X CNPJs. Deseja iniciar a consulta em lote (via
+          API)?
+        </p>
+
+        <div class="modal-actions">
+          <button id="cancelImport" class="btn-secondary modal-btn">
+            Cancelar
+          </button>
+          <button id="confirmImport" class="btn-primary modal-btn">
+            Sim, iniciar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Confirmar limpeza da tabela -->
+    <div id="confirmClearOverlay" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h2 class="modal-title">Limpar tabela?</h2>
+        <p class="modal-text">
+          Ao limpar a tabela,
+          <strong>todos os registros exibidos aqui serão apagados</strong>,
+          incluindo os dados salvos no navegador (localStorage). Isso
+          <strong>não afeta a Receita Federal</strong>, apenas o histórico
+          desta tela. Essa ação não pode ser desfeita.
+        </p>
+
+        <div class="modal-actions">
+          <button id="cancelClear" class="btn-secondary modal-btn">
+            Cancelar
+          </button>
+          <button id="confirmClear" class="btn-primary modal-btn">
+            Sim, limpar tudo
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Reconsultar erros -->
+    <div id="confirmRetryOverlay" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h2 class="modal-title">Reconsultar erros?</h2>
+
+        <p class="modal-text">
+          Os registros com problemas serão consultados novamente, usando as
+          APIs RADAR e ReceitaWS conforme o tipo de falha:
+        </p>
+
+        <ul class="modal-list">
+          <li>
+            <strong>Sem habilitação e sem cadastro:</strong> RADAR + ReceitaWS
+          </li>
+          <li>
+            <strong>Com cadastro, mas sem habilitação:</strong> apenas RADAR
+          </li>
+          <li>
+            <strong>Com habilitação, mas sem cadastro:</strong> apenas
+            ReceitaWS
+          </li>
+        </ul>
+
+        <p class="modal-text">
+          Este processo pode levar alguns minutos dependendo da quantidade de
+          CNPJs.
+        </p>
+
+        <div class="modal-actions">
+          <button id="cancelRetry" class="btn-secondary modal-btn">
+            Cancelar
+          </button>
+          <button id="confirmRetry" class="btn-primary modal-btn">
+            Sim, reconsultar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== MODAL HISTÓRICO ========== -->
+    <div id="historyOverlay" class="modal-overlay hidden">
+      <div class="modal">
+        <h2>Exportar histórico</h2>
+
+        <form id="historyForm" class="history-form">
+          <div class="field-group">
+            <label>Tipo de histórico:</label>
+            <div class="radio-row">
+              <label>
+                <input type="radio" name="historyType" value="dia" checked />
+                Apenas 1 dia
+              </label>
+              <label>
+                <input type="radio" name="historyType" value="intervalo" />
+                Intervalo de datas
+              </label>
+            </div>
+          </div>
+
+          <div class="field-group" id="historySingleDateGroup">
+            <label for="historySingleDate">Data (YYYY-MM-DD):</label>
+            <input type="date" id="historySingleDate" required />
+          </div>
+
+          <div class="field-row" id="historyIntervalGroup" style="display: none">
+            <div class="field-group">
+              <label for="historyFromDate">Data inicial:</label>
+              <input type="date" id="historyFromDate" />
+            </div>
+            <div class="field-group">
+              <label for="historyToDate">Data final:</label>
+              <input type="date" id="historyToDate" />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" id="historyCancel" class="btn secondary">
+              Cancelar
+            </button>
+            <button type="submit" class="btn primary">Exportar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL GENÉRICO: avisos / erros / mensagens -->
+    <div id="infoModal" class="modal-overlay hidden">
+      <div class="modal-card">
+        <h2 id="infoModalTitle" class="modal-title">Aviso</h2>
+        <p id="infoModalMessage" class="modal-text">Mensagem genérica.</p>
+
+        <div class="modal-actions" style="justify-content: center">
+          <button id="infoModalClose" class="btn-primary modal-btn">
+            OK, entendi
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th style="width: 32px; text-align: center">Sel.</th>
+            <th>Data da Consulta</th>
+            <th>CNPJ</th>
+            <th>Contribuinte</th>
+            <th>Situação da Habilitação</th>
+            <th>Data da Situação</th>
+            <th>Submodalidade</th>
+            <th>Razão Social</th>
+            <th>Nome Fantasia</th>
+            <th>Município</th>
+            <th>UF</th>
+            <th>Data de Constituição</th>
+            <th>Regime Tributário</th>
+            <th>Data Opção Simples</th>
+            <th>Capital Social</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="no-data-row">
+            <td colspan="15" class="no-data">
+              Nenhum registro adicionado ainda
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- JS do front separado -->
+  <script src="./server.js"></script>
+</body>
+
 </html>

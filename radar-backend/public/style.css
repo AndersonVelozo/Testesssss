@@ -981,7 +981,15 @@ body.home-page {
 }
 
 .home-main {
-  max-width: 1120px;
+  max-width: 1400px; /* pode mudar pra 1500 se quiser ainda mais aberto */
+  margin: 0 auto;
+}
+
+/* Garante 5 cards bem distribuídos na linha em telas grandes */
+.home-card-grid,
+.row-secondary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 24px;
 }
 
 .home-title-block h1 {
@@ -1076,49 +1084,62 @@ body.home-page {
 
 /* =============================
    CENTRAL DE CHAMADOS DE TI
+   DARK THEME COMPLETO (ATUALIZADO)
 ============================= */
 
+/* Permite rolagem vertical + remove scrollbars */
 body.ti-page {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  background: #e5e7eb;
-  color: #111827;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+body.ti-page::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
 }
 
+/* LAYOUT PRINCIPAL */
 .ti-layout {
   display: flex;
-  min-height: 100vh;
+  min-height: calc(100vh - 48px);
+  max-width: 1240px;
+  margin: 24px auto;
+  border-radius: 22px;
+  overflow: hidden;
+  background: radial-gradient(circle at top left, #020617 0, #020617 55%);
+  border: 1px solid rgba(30, 64, 175, 0.7);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.95);
 }
 
+/* SIDEBAR */
 .ti-sidebar {
   width: 240px;
-  background: #111827;
+  background: #020617;
   color: #e5e7eb;
-  padding: 20px 16px;
-  box-sizing: border-box;
+  padding: 20px 18px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  border-right: 1px solid rgba(15, 23, 42, 0.9);
 }
 
 .ti-sidebar-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
 }
 
 .ti-avatar {
   width: 32px;
   height: 32px;
   border-radius: 999px;
-  background: #22c55e;
+  background: rgba(56, 189, 248, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.8rem;
   font-weight: 600;
+  color: #e5e7eb;
 }
 
 .ti-entity-name {
@@ -1131,112 +1152,126 @@ body.ti-page {
   opacity: 0.7;
 }
 
+/* MENU */
 .ti-nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 8px;
 }
-
 .ti-nav-item {
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: 999px;
   text-decoration: none;
   color: #e5e7eb;
   font-size: 0.9rem;
+  transition: 0.16s;
 }
-
 .ti-nav-item:hover {
-  background: rgba(148, 163, 184, 0.2);
+  background: rgba(30, 64, 175, 0.7);
+  transform: translateX(2px);
 }
-
 .ti-nav-item-active {
-  background: #1f2937;
+  background: rgba(37, 99, 235, 0.32);
 }
 
 .ti-back-portal {
   margin-top: auto;
   padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
   background: transparent;
   color: #e5e7eb;
   cursor: pointer;
   font-size: 0.8rem;
+  transition: 0.16s;
 }
-
 .ti-back-portal:hover {
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(148, 163, 184, 0.2);
+  transform: translateY(-1px);
 }
 
+/* ÁREA PRINCIPAL */
 .ti-main {
   flex: 1;
-  padding: 24px 32px;
+  padding: 24px 40px 32px;
   box-sizing: border-box;
-  background: #f9fafb;
+  background: radial-gradient(
+      circle at top left,
+      rgba(37, 99, 235, 0.18),
+      transparent 50%
+    ),
+    #020617;
 }
 
-.ti-section + .ti-section {
-  margin-top: 32px;
+.ti-section {
+  max-width: 1100px;
+  margin: 0 auto 32px;
 }
 
+.ti-main h1 {
+  font-size: 1.6rem;
+  margin: 0 0 12px;
+}
+
+.ti-main h2 {
+  font-size: 1.2rem;
+  margin: 0 0 10px;
+}
+
+/* STATUS CARDS */
 .ti-status-grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
 .ti-status-card {
   padding: 10px 12px;
-  border-radius: 8px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: radial-gradient(circle at top left, #111827 0, #020617 65%);
+  border: 1px solid rgba(55, 65, 81, 0.9);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.9);
 }
 
+/* DOTS */
 .ti-dot {
   width: 10px;
   height: 10px;
   border-radius: 999px;
   display: inline-block;
-  margin-right: 6px;
 }
-
 .ti-dot-new {
   background: #22c55e;
 }
-
 .ti-dot-processing {
   background: #38bdf8;
 }
-
 .ti-dot-pending {
   background: #f59e0b;
 }
-
 .ti-dot-solved {
   background: #4ade80;
 }
-
 .ti-dot-closed {
-  background: #000;
+  background: #9ca3af;
 }
-
 .ti-dot-deleted {
   background: #ef4444;
 }
 
+/* FORMULÁRIO */
 .ti-form {
-  margin-top: 16px;
-  max-width: 640px;
-  background: white;
-  border-radius: 10px;
-  padding: 16px 18px;
-  border: 1px solid #e5e7eb;
+  margin-top: 10px;
+  max-width: 100%;
+  background: #020617;
+  border-radius: 18px;
+  padding: 18px 18px 20px;
+  border: 1px solid rgba(31, 41, 55, 0.95);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.95);
 }
 
 .ti-form-row {
@@ -1247,35 +1282,806 @@ body.ti-page {
 }
 
 .ti-form-row label {
-  font-size: 0.85rem;
-  font-weight: 500;
+  font-size: 0.82rem;
+  color: #9ca3af;
 }
 
 .ti-form-row input,
 .ti-form-row select,
 .ti-form-row textarea {
   padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.98);
+  color: #e5e7eb;
   font-size: 0.9rem;
-  font-family: inherit;
+  transition: 0.15s;
 }
 
-.ti-empty {
+.ti-form-row input:focus,
+.ti-form-row select:focus,
+.ti-form-row textarea:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.6);
+}
+
+.ti-form-row textarea {
+  min-height: 160px;
+}
+
+/* LISTA DE TICKETS – altura fixa + scroll interno */
+.ti-table-wrapper {
   margin-top: 12px;
-  font-size: 0.9rem;
-  color: #6b7280;
+  border-radius: 14px;
+  border: 1px solid rgba(31, 41, 55, 0.95);
+  background: rgba(15, 23, 42, 0.98);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.95);
+
+  /* 🟢 limite de altura (≈ 5 linhas) + scroll só aqui */
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-/* Responsivo simples */
-@media (max-width: 768px) {
+/* scroll mais discreto dentro da tabela de tickets */
+.ti-table-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+.ti-table-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ti-table-wrapper::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 999px;
+}
+
+.ti-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ti-table th,
+.ti-table td {
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.ti-table thead {
+  background: rgba(15, 23, 42, 1);
+}
+
+.ti-table th {
+  color: #9ca3af;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+}
+
+.ti-table tbody tr:nth-child(odd) {
+  background: rgba(15, 23, 42, 0.98);
+}
+.ti-table tbody tr:nth-child(even) {
+  background: rgba(17, 24, 39, 0.98);
+}
+.ti-table tbody tr:hover {
+  background: rgba(30, 64, 175, 0.35);
+}
+
+/* BADGES */
+.ti-badge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+}
+
+.ti-badge-new {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+  border-color: rgba(34, 197, 94, 0.7);
+}
+.ti-badge-processing {
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+  border-color: rgba(59, 130, 246, 0.8);
+}
+.ti-badge-pending {
+  background: rgba(234, 179, 8, 0.18);
+  color: #facc15;
+  border-color: rgba(234, 179, 8, 0.75);
+}
+.ti-badge-solved {
+  background: rgba(22, 163, 74, 0.2);
+  color: #bbf7d0;
+  border-color: rgba(22, 163, 74, 0.75);
+}
+.ti-badge-closed {
+  background: rgba(148, 163, 184, 0.18);
+  color: #e5e7eb;
+  border-color: rgba(148, 163, 184, 0.8);
+}
+.ti-badge-deleted {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.85);
+}
+
+/* RESPONSIVO */
+@media (max-width: 900px) {
   .ti-layout {
     flex-direction: column;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
   }
   .ti-sidebar {
     width: 100%;
     flex-direction: row;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.9);
+  }
+  .ti-main {
+    padding: 18px 16px 22px;
+  }
+}
+
+@media (max-width: 640px) {
+  .ti-sidebar {
+    flex-wrap: wrap;
+  }
+  .ti-main h1 {
+    font-size: 1.4rem;
+  }
+}
+
+/* ====== FILE INPUT BONITÃO (ANEXOS) ====== */
+
+.ti-file-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ti-file-input input[type="file"] {
+  display: none; /* esconde o input nativo */
+}
+
+.ti-file-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-inline: 16px;
+  font-size: 0.86rem;
+}
+
+/* texto ao lado do botão */
+.ti-file-name {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ====== RESERVATIONS (CARDS) ====== */
+
+.ti-reservation-form {
+  margin-bottom: 18px;
+}
+
+.ti-reservation-list-wrapper {
+  margin-top: 10px;
+}
+
+.ti-reservation-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+/* LISTA DE RESERVAS – altura fixa + scroll interno */
+.ti-reservations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  /* 🟢 limite de altura + scroll interno */
+  max-height: 230px; /* ajusta se quiser mais/menos reservas visíveis */
+  overflow-y: auto;
+  padding-right: 6px; /* espaço pro scroll não colar na borda */
+}
+
+/* scroll discreto na lista de reservas */
+.ti-reservations-list::-webkit-scrollbar {
+  width: 6px;
+}
+.ti-reservations-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ti-reservations-list::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 999px;
+}
+.ti-reservation-card {
+  border-radius: 14px;
+  padding: 8px 10px; /* era 10px 12px */
+  background: radial-gradient(circle at top left, #111827 0, #020617 65%);
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.9);
+  font-size: 0.82rem; /* levemente menor */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ti-reservation-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.ti-reservation-date {
+  font-weight: 600;
+}
+
+.ti-reservation-period {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.ti-reservation-reason {
+  font-size: 0.85rem;
+  color: #d1d5db;
+}
+
+/* Mensagens de status (tickets / reservas) */
+.ti-status-msg {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  padding: 8px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+}
+
+/* sucesso */
+.ti-status-ok {
+  background: rgba(22, 163, 74, 0.18);
+  color: #bbf7d0;
+  border-color: rgba(22, 163, 74, 0.7);
+}
+
+/* erro */
+.ti-status-error {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.8);
+}
+
+/* =============================
+   PAINEL MASTER TI (DASHBOARD)
+   ============================= */
+
+body.master-page {
+  margin: 0;
+  min-height: 100vh;
+  padding: 24px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  /* override do fundo geral */
+  background: radial-gradient(
+    circle at top,
+    #020617 0,
+    #020617 55%,
+    #020617 100%
+  );
+  color: #e5e7eb;
+  box-sizing: border-box;
+}
+
+.master-layout {
+  display: flex;
+  min-height: calc(100vh - 48px);
+  max-width: 1240px;
+  margin: 0 auto;
+  border-radius: 22px;
+  background: radial-gradient(circle at top left, #111827 0, #020617 55%);
+  border: 1px solid rgba(30, 64, 175, 0.7);
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.95);
+  overflow: hidden;
+}
+
+/* Sidebar */
+
+.master-sidebar {
+  width: 250px;
+  background: radial-gradient(circle at top, #020617 0, #020617 100%);
+  border-right: 1px solid rgba(15, 23, 42, 0.9);
+  padding: 20px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.master-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.master-brand-main {
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.master-brand-sub {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+.master-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.master-nav-item {
+  padding: 8px 11px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  text-decoration: none;
+  color: #9ca3af;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease;
+}
+
+.master-nav-item:hover {
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  transform: translateX(2px);
+}
+
+.master-nav-item.active {
+  background: rgba(37, 99, 235, 0.22);
+  color: #bfdbfe;
+}
+
+.master-back-portal {
+  margin-top: auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.1s ease;
+}
+
+.master-back-portal:hover {
+  background: rgba(148, 163, 184, 0.2);
+  transform: translateY(-1px);
+}
+
+.master-sidebar-footer {
+  margin-top: 12px;
+}
+
+.master-user-mini {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid rgba(30, 64, 175, 0.8);
+}
+
+.master-avatar-mini {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(37, 99, 235, 0.28);
+}
+
+.master-user-name {
+  font-size: 0.86rem;
+}
+
+.master-user-role {
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+/* Conteúdo principal */
+
+.master-main {
+  flex: 1;
+  padding: 20px 22px 24px;
+  box-sizing: border-box;
+}
+
+.master-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.master-header h1 {
+  margin: 0 0 4px;
+  font-size: 1.55rem;
+}
+
+.master-header-sub {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+.master-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.master-select {
+  border-radius: 999px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.98);
+  color: #e5e7eb;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+}
+
+.master-header-btn {
+  padding-inline: 14px;
+  font-size: 0.82rem;
+}
+
+/* Métricas */
+
+.master-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.master-metric-card {
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: radial-gradient(circle at top left, #111827 0, #020617 55%);
+  border: 1px solid rgba(37, 99, 235, 0.5);
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.master-metric-label {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.master-metric-value {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.master-metric-sub {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+/* Grid principal: tabela + side panel */
+
+.master-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.2fr);
+  gap: 18px;
+}
+
+/* Painéis */
+
+.master-panel {
+  background: rgba(15, 23, 42, 0.98);
+  border-radius: 18px;
+  border: 1px solid rgba(31, 41, 55, 0.9);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.95);
+  padding: 14px 15px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.master-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.master-panel-header h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.master-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.master-input {
+  border-radius: 999px;
+  border: 1px solid rgba(55, 65, 81, 0.9);
+  background: rgba(15, 23, 42, 0.96);
+  color: #e5e7eb;
+  font-size: 0.8rem;
+  padding: 7px 10px;
+  min-width: 220px;
+}
+
+/* Tabela chamados */
+
+.master-table-wrapper {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(31, 41, 55, 0.95);
+}
+
+.master-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.master-table th,
+.master-table td {
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.master-table thead {
+  background: rgba(15, 23, 42, 1);
+}
+
+.master-table th {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+}
+
+.master-table tbody tr:nth-child(odd) {
+  background: rgba(15, 23, 42, 0.98);
+}
+
+.master-table tbody tr:nth-child(even) {
+  background: rgba(17, 24, 39, 0.98);
+}
+
+.master-table tbody tr:hover {
+  background: rgba(30, 64, 175, 0.32);
+}
+
+/* Badges */
+
+.master-badge {
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.master-badge-open {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fecaca;
+}
+
+.master-badge-progress {
+  background: rgba(59, 130, 246, 0.16);
+  color: #bfdbfe;
+}
+
+.master-badge-wait {
+  background: rgba(234, 179, 8, 0.2);
+  color: #facc15;
+}
+
+.master-badge-done {
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+}
+
+/* Timeline */
+
+.master-side-panel {
+  max-height: 100%;
+}
+
+.master-timeline {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.master-timeline li {
+  display: flex;
+  gap: 8px;
+}
+
+.master-timeline-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  margin-top: 4px;
+  background: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.32);
+}
+
+.master-timeline-content {
+  font-size: 0.8rem;
+}
+
+.master-timeline-meta {
+  margin: 4px 0 0;
+  font-size: 0.73rem;
+  color: #9ca3af;
+}
+
+/* Responsivo Master TI */
+
+@media (max-width: 980px) {
+  .master-layout {
+    flex-direction: column;
+    max-width: 100%;
+  }
+
+  .master-sidebar {
+    width: 100%;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
+    border-right: none;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.9);
   }
+
+  .master-sidebar-footer {
+    margin-top: 0;
+  }
+
+  .master-main {
+    padding: 18px 16px 22px;
+  }
+
+  .master-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  body.master-page {
+    padding: 16px;
+  }
+
+  .master-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .master-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .master-input {
+    min-width: 100%;
+  }
+}
+
+/* ====== LAYOUT GERAL HOME ====== */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* sem scroll */
+  background: #020617; /* mesmo fundo do portal */
+}
+
+/* tira qualquer borda/fundo cinza em volta do conteúdo */
+body.home-page {
+  background: #020617;
+}
+
+.home-overlay {
+  max-width: 100%;
+  margin: 0;
+  padding: 32px 60px; /* se quiser ainda menos borda lateral, aumenta esse 60 pra 80 ou mais */
+}
+
+/* ====== GRID DE CARDS – 2 FILEIRAS ====== */
+
+/* 1ª fileira – 5 cards principais */
+.home-card-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+
+/* 2ª fileira – 5 cards "em andamento" */
+.row-secondary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+  margin-top: 28px;
+}
+
+/* cards em andamento: mesmo estilo, só "desativados" */
+.card-andamento {
+  cursor: default;
+}
+
+.card-andamento:hover {
+  transform: none; /* tira animação de hover */
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.7);
+}
+
+/* botão de andamento usa o estilo do btn-secondary desabilitado */
+.card-andamento .home-card-btn {
+  width: fit-content;
+}
+
+/* responsivo pra não quebrar em telas menores */
+@media (max-width: 1280px) {
+  .home-card-grid,
+  .row-secondary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .home-card-grid,
+  .row-secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .home-card-grid,
+  .row-secondary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Em telas ultra-wide, deixa ainda mais largo */
+@media (min-width: 1700px) {
+  .home-main {
+    max-width: 1600px;
+  }
+}
+
+.btn-primary[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
 }

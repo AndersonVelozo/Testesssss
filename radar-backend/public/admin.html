@@ -1,1103 +1,1140 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <title>Painel Administrativo - RADAR</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="style.css" />
 
-    <style>
-      /* ===================================
+<head>
+  <meta charset="utf-8" />
+  <title>Painel Administrativo - RADAR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    /* ===================================
           BASE / LAYOUT 
       =================================== */
 
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden; /* sem scroll lateral */
-        overflow-y: auto; /* scroll vertical normal */
-      }
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      /* sem scroll lateral */
+      overflow-y: auto;
+      /* scroll vertical normal */
+    }
 
-      body.admin-page {
-        padding: 24px;
-        color: #e5e7eb;
-      }
+    body.admin-page {
+      padding: 24px;
+      color: #e5e7eb;
+    }
 
-      .admin-container {
-        min-height: calc(100vh - 48px);
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-      }
+    .admin-container {
+      min-height: calc(100vh - 48px);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
 
-      /* ===================================
+    /* ===================================
                     HEADER
       =================================== */
 
-      .admin-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: rgba(15, 23, 42, 0.55);
-        border: 1px solid rgba(148, 163, 184, 0.35);
-        padding: 18px 22px;
-        border-radius: 16px;
-        backdrop-filter: blur(14px);
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-      }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.55);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 18px 22px;
+      border-radius: 16px;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
 
-      .admin-title h1 {
-        margin: 0;
-        font-size: 1.45rem;
-      }
+    .admin-title h1 {
+      margin: 0;
+      font-size: 1.45rem;
+    }
 
-      .admin-title p {
-        color: #9ca3af;
-        font-size: 0.85rem;
-        margin-top: 4px;
-      }
+    .admin-title p {
+      color: #9ca3af;
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
 
-      .admin-user-info {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-      }
+    .admin-user-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
 
-      .admin-user-box {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
+    .admin-user-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-      .admin-avatar {
-        width: 34px;
-        height: 34px;
-        border-radius: 999px;
-        background: radial-gradient(circle at 30% 30%, #4f46e5, #0f172a);
-        color: #e5e7eb;
-        font-size: 0.8rem;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.7);
-      }
+    .admin-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #4f46e5, #0f172a);
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.7);
+    }
 
-      .admin-user-text {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
+    .admin-user-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
-      .admin-user-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
+    .admin-user-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-      .badge-role {
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        border: 1px solid rgba(129, 140, 248, 0.65);
-        background: rgba(129, 140, 248, 0.15);
-        color: #c7d2fe;
-      }
+    .badge-role {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      border: 1px solid rgba(129, 140, 248, 0.65);
+      background: rgba(129, 140, 248, 0.15);
+      color: #c7d2fe;
+    }
 
-      .btn-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.5);
-        background: rgba(15, 23, 42, 0.8);
-        color: #e5e7eb;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.95rem;
-        transition: 0.2s ease;
-      }
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.8);
+      color: #e5e7eb;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      transition: 0.2s ease;
+    }
 
-      .btn-icon:hover {
-        border-color: rgba(129, 140, 248, 0.9);
-        background: rgba(30, 64, 175, 0.7);
-      }
+    .btn-icon:hover {
+      border-color: rgba(129, 140, 248, 0.9);
+      background: rgba(30, 64, 175, 0.7);
+    }
 
-      /* ===================================
+    /* ===================================
                  GRID / CARDS
       =================================== */
 
-      .admin-grid {
-        display: grid;
-        grid-template-columns: 1fr 1.4fr;
-        gap: 24px;
-        height: 100%;
-      }
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 24px;
+      height: 100%;
+    }
 
-      .admin-card {
-        background: rgba(15, 23, 42, 0.62);
-        border: 1px solid rgba(148, 163, 184, 0.32);
-        padding: 24px;
-        border-radius: 18px;
-        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
-        backdrop-filter: blur(12px);
-        overflow: visible; /* deixa dropdown sair pra fora */
-      }
+    .admin-card {
+      background: rgba(15, 23, 42, 0.62);
+      border: 1px solid rgba(148, 163, 184, 0.32);
+      padding: 24px;
+      border-radius: 18px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(12px);
+      overflow: visible;
+      /* deixa dropdown sair pra fora */
+    }
 
-      .admin-card h2 {
-        margin: 0;
-        font-size: 1.2rem;
-      }
+    .admin-card h2 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
 
-      .admin-card p {
-        margin-top: 6px;
-        margin-bottom: 18px;
-        font-size: 0.85rem;
-        color: #9ca3af;
-      }
+    .admin-card p {
+      margin-top: 6px;
+      margin-bottom: 18px;
+      font-size: 0.85rem;
+      color: #9ca3af;
+    }
 
-      .admin-form {
-        margin-top: 8px;
-      }
+    .admin-form {
+      margin-top: 8px;
+    }
 
-      /* ===================================
+    /* ===================================
                     FORM
       =================================== */
 
-      .admin-row-3 {
-        display: flex;
-        gap: 16px;
-        margin-top: 18px;
-      }
+    .admin-row-3 {
+      display: flex;
+      gap: 16px;
+      margin-top: 18px;
+    }
 
-      .admin-row-sub {
-        display: flex;
-        gap: 48px;
-        margin-top: 14px;
-        align-items: center;
-      }
+    .admin-row-sub {
+      display: flex;
+      gap: 48px;
+      margin-top: 14px;
+      align-items: center;
+    }
 
-      .admin-col {
-        display: flex;
-        flex-direction: column;
-      }
+    .admin-col {
+      display: flex;
+      flex-direction: column;
+    }
 
-      #role:focus {
-        border-color: #60a5fa;
-        box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.55);
-      }
+    #role:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.55);
+    }
 
-      #role:hover {
-        border-color: rgba(129, 140, 248, 0.9);
-      }
+    #role:hover {
+      border-color: rgba(129, 140, 248, 0.9);
+    }
 
-      /* Toggles */
-      .toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        font-size: 0.85rem;
-      }
+    /* Toggles */
+    .toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
 
-      .toggle input {
-        position: absolute;
-        opacity: 0;
-      }
+    .toggle input {
+      position: absolute;
+      opacity: 0;
+    }
 
-      .toggle-track {
-        width: 38px;
-        height: 20px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid rgba(148, 163, 184, 0.7);
-        display: flex;
-        align-items: center;
-        padding: 2px;
-        transition: 0.18s;
-      }
+    .toggle-track {
+      width: 38px;
+      height: 20px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      transition: 0.18s;
+    }
 
-      .toggle-thumb {
-        width: 16px;
-        height: 16px;
-        border-radius: 999px;
-        background: linear-gradient(135deg, #38bdf8, #6366f1);
-        transition: 0.18s;
-      }
+    .toggle-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      transition: 0.18s;
+    }
 
-      .toggle input:checked + .toggle-track {
-        background: rgba(59, 130, 246, 0.5);
-        border-color: rgba(129, 140, 248, 0.9);
-      }
+    .toggle input:checked+.toggle-track {
+      background: rgba(59, 130, 246, 0.5);
+      border-color: rgba(129, 140, 248, 0.9);
+    }
 
-      .toggle input:checked + .toggle-track .toggle-thumb {
-        transform: translateX(16px);
-      }
+    .toggle input:checked+.toggle-track .toggle-thumb {
+      transform: translateX(16px);
+    }
 
-      /* ===================================
+    /* ===================================
                 MINI TOGGLE TABELA
       =================================== */
 
-      .mini-toggle input {
-        position: absolute;
-        opacity: 0;
-      }
+    .mini-toggle input {
+      position: absolute;
+      opacity: 0;
+    }
 
-      .mini-toggle-track {
-        width: 32px;
-        height: 18px;
-        border-radius: 999px;
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid rgba(148, 163, 184, 0.7);
-        display: flex;
-        align-items: center;
-        padding: 2px;
-        transition: 0.18s;
-      }
+    .mini-toggle-track {
+      width: 32px;
+      height: 18px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      transition: 0.18s;
+    }
 
-      .mini-toggle-thumb {
-        width: 14px;
-        height: 14px;
-        border-radius: 999px;
-        background: linear-gradient(135deg, #38bdf8, #6366f1);
-        transition: 0.18s;
-      }
+    .mini-toggle-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      transition: 0.18s;
+    }
 
-      .mini-toggle input:checked + .mini-toggle-track {
-        background: rgba(59, 130, 246, 0.5);
-        border-color: rgba(129, 140, 248, 0.9);
-      }
+    .mini-toggle input:checked+.mini-toggle-track {
+      background: rgba(59, 130, 246, 0.5);
+      border-color: rgba(129, 140, 248, 0.9);
+    }
 
-      .mini-toggle input:checked + .mini-toggle-track .mini-toggle-thumb {
-        transform: translateX(14px);
-      }
+    .mini-toggle input:checked+.mini-toggle-track .mini-toggle-thumb {
+      transform: translateX(14px);
+    }
 
-      /* ===================================
+    /* ===================================
                 PAGINAÇÃO
       =================================== */
 
-      .admin-pagination {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        margin-top: 10px;
-        color: #9ca3af;
-      }
+    .admin-pagination {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+      color: #9ca3af;
+    }
 
-      .admin-pagination button {
-        padding: 6px 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.6);
-        background: transparent;
-        color: #e5e7eb;
-        cursor: pointer;
-      }
+    .admin-pagination button {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: transparent;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
 
-      .admin-pagination button:hover:not(:disabled) {
-        border-color: rgba(129, 140, 248, 0.95);
-        background: rgba(30, 64, 175, 0.6);
-      }
+    .admin-pagination button:hover:not(:disabled) {
+      border-color: rgba(129, 140, 248, 0.95);
+      background: rgba(30, 64, 175, 0.6);
+    }
 
-      .admin-pagination button:disabled {
-        opacity: 0.4;
-        cursor: default;
-      }
+    .admin-pagination button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
 
-      /* ===================================
+    /* ===================================
              BUSCA / TABELA / BADGES
       =================================== */
 
-      .search-box {
-        width: 100%;
-        margin-bottom: 12px;
-      }
+    .search-box {
+      width: 100%;
+      margin-bottom: 12px;
+    }
 
-      .search-box input {
-        width: 100%;
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid rgba(148, 163, 184, 0.5);
-        background: rgba(15, 23, 42, 0.9);
-        font-size: 0.85rem;
-        color: #fff;
-      }
+    .search-box input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      font-size: 0.85rem;
+      color: #fff;
+    }
 
-      .table-area {
-        height: calc(100% - 70px);
-        overflow-y: auto;
-        border-radius: 14px;
-      }
+    .table-area {
+      height: calc(100% - 70px);
+      overflow-y: auto;
+      border-radius: 14px;
+    }
 
-      #usersTable th:nth-child(4),
-      #usersTable td:nth-child(4) {
-        text-align: center;
-      }
+    #usersTable th:nth-child(4),
+    #usersTable td:nth-child(4) {
+      text-align: center;
+    }
 
-      .badge {
-        padding: 3px 9px;
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 600;
-      }
+    .badge {
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
 
-      .badge-admin {
-        background: rgba(129, 140, 248, 0.2);
-        color: #c7d2fe;
-      }
+    .badge-admin {
+      background: rgba(129, 140, 248, 0.2);
+      color: #c7d2fe;
+    }
 
-      .badge-user {
-        background: rgba(59, 130, 246, 0.22);
-        color: #bfdbfe;
-      }
+    .badge-user {
+      background: rgba(59, 130, 246, 0.22);
+      color: #bfdbfe;
+    }
 
-      .badge-ativo {
-        background: rgba(74, 222, 128, 0.22);
-        color: #bbf7d0;
-      }
+    .badge-ativo {
+      background: rgba(74, 222, 128, 0.22);
+      color: #bbf7d0;
+    }
 
-      .badge-inativo {
-        background: rgba(248, 113, 113, 0.22);
-        color: #fecaca;
-      }
+    .badge-inativo {
+      background: rgba(248, 113, 113, 0.22);
+      color: #fecaca;
+    }
 
-      .admin-actions {
-        display: flex;
-        gap: 6px;
-      }
+    .admin-actions {
+      display: flex;
+      gap: 6px;
+    }
 
-      .btn-sm {
-        padding: 4px 10px;
-        font-size: 0.75rem;
-      }
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 0.75rem;
+    }
 
-      /* ===================================
+    /* ===================================
                  BOTÕES GERAIS
       =================================== */
 
+    .admin-btn-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      margin-top: 26px;
+      margin-bottom: 10px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4f7cff, #3162ff);
+      color: #fff;
+      font-weight: 600;
+      border: none;
+      padding: 12px 34px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      box-shadow: 0 0 18px rgba(79, 124, 255, 0.55);
+      transition: 0.2s ease;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #6f94ff, #3e6bff);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #d1d5db;
+      font-weight: 500;
+      padding: 12px 34px;
+      border-radius: 50px;
+      border: 1px solid rgba(140, 140, 255, 0.4);
+      cursor: pointer;
+      font-size: 0.93rem;
+      transition: 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(200, 200, 255, 0.8);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .admin-btn-row .btn-primary,
+    .admin-btn-row .btn-secondary {
+      border-radius: 999px;
+      padding: 10px 22px;
+      font-size: 0.9rem;
+    }
+
+    #formMsg {
+      margin-top: 8px;
+    }
+
+    /* Container do select customizado */
+    .custom-select {
+      position: relative;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .custom-select-display {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      padding: 10px 16px;
+      border-radius: 999px;
+      color: #e5e7eb;
+      font-size: 0.9rem;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .custom-select-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      border-radius: 14px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+      padding: 6px 0;
+      display: none;
+      max-height: 180px;
+      overflow-y: auto;
+      /* scroll só vertical quando precisar */
+      overflow-x: hidden;
+      /* 🚫 sem scroll horizontal */
+      z-index: 50;
+    }
+
+    .custom-select-item {
+      padding: 10px 16px;
+      font-size: 0.9rem;
+      color: #e5e7eb;
+    }
+
+    .custom-select-item:hover {
+      background: rgba(59, 130, 246, 0.25);
+    }
+
+    /* Ícone de seta */
+    .custom-select-arrow {
+      font-size: 0.8rem;
+      opacity: 0.7;
+    }
+
+    /* ===================================
+                 TEMA CLARO
+      =================================== */
+
+    /* Corpo / background / texto */
+    body.admin-page.light-theme {
+      background: #f3f4f6;
+      color: #0f172a;
+    }
+
+    body.admin-page.light-theme .admin-header,
+    body.admin-page.light-theme .admin-card {
+      background: rgba(255, 255, 255, 0.96);
+      border-color: #e5e7eb;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+      color: #0f172a;
+    }
+
+    body.admin-page.light-theme .admin-title p {
+      color: #6b7280;
+    }
+
+    /* Avatar mais claro no tema branco */
+    body.admin-page.light-theme .admin-avatar {
+      background: radial-gradient(circle at 30% 30%, #4f46e5, #e5e7ff);
+      color: #111827;
+      box-shadow: 0 0 0 2px #e5e7eb;
+    }
+
+    /* Botão de tema no claro */
+    body.admin-page.light-theme .btn-icon {
+      background: #f9fafb;
+      color: #111827;
+      border-color: #e5e7eb;
+    }
+
+    /* Inputs no tema claro */
+    body.admin-page.light-theme input[type="text"],
+    body.admin-page.light-theme input[type="email"],
+    body.admin-page.light-theme input[type="password"] {
+      background: #f9fafb;
+      color: #111827;
+      border: 1px solid #d1d5db;
+    }
+
+    body.admin-page.light-theme input::placeholder {
+      color: #9ca3af;
+    }
+
+    body.admin-page.light-theme .search-box input {
+      background: #f9fafb;
+      color: #111827;
+      border-color: #d1d5db;
+    }
+
+    /* Select customizado no tema claro */
+    body.admin-page.light-theme .custom-select-display {
+      background: #ffffff;
+      color: #111827;
+      border-color: #cbd5e1;
+    }
+
+    body.admin-page.light-theme .custom-select-list {
+      background: #ffffff;
+      border-color: #cbd5e1;
+    }
+
+    body.admin-page.light-theme .custom-select-item {
+      color: #111827;
+    }
+
+    body.admin-page.light-theme .custom-select-item:hover {
+      background: rgba(59, 130, 246, 0.12);
+    }
+
+    .custom-select-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .custom-select-list {
+      scrollbar-width: none;
+      /* Firefox */
+    }
+
+    /* Badges mais fortes */
+    body.admin-page.light-theme .badge-admin {
+      background: #e0e7ff;
+      color: #1d4ed8;
+    }
+
+    body.admin-page.light-theme .badge-user {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    body.admin-page.light-theme .badge-ativo {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    body.admin-page.light-theme .badge-inativo {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    /* Toggles no tema claro */
+    body.admin-page.light-theme .toggle-track,
+    body.admin-page.light-theme .mini-toggle-track {
+      background: #e5e7eb;
+      border-color: #cbd5e1;
+    }
+
+    body.admin-page.light-theme .toggle input:checked+.toggle-track,
+    body.admin-page.light-theme .mini-toggle input:checked+.mini-toggle-track {
+      background: #bfdbfe;
+      border-color: #3b82f6;
+    }
+
+    /* Botões no tema claro */
+    body.admin-page.light-theme .btn-primary {
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
+    }
+
+    body.admin-page.light-theme .btn-secondary {
+      border-color: #cbd5e1;
+      color: #111827;
+    }
+
+    body.admin-page.light-theme .btn-secondary:hover {
+      background: #e5e7eb;
+      border-color: #94a3b8;
+      color: #0f172a;
+    }
+
+    /* ===================================
+                 RESPONSIVO
+      =================================== */
+
+    @media (max-width: 1024px) {
+
+      html,
+      body {
+        height: auto;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+
+      body.admin-page {
+        padding: 16px;
+      }
+
+      .admin-container {
+        height: auto;
+        min-height: 100vh;
+        gap: 16px;
+      }
+
+      .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .admin-user-info {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .admin-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .table-area {
+        height: auto;
+        max-height: 60vh;
+      }
+
+      .admin-row-3 {
+        flex-direction: column;
+      }
+
+      .admin-row-sub {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
       .admin-btn-row {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 18px;
-        margin-top: 26px;
-        margin-bottom: 10px;
-      }
-
-      .btn-primary {
-        background: linear-gradient(135deg, #4f7cff, #3162ff);
-        color: #fff;
-        font-weight: 600;
-        border: none;
-        padding: 12px 34px;
-        border-radius: 50px;
-        cursor: pointer;
-        font-size: 0.95rem;
-        box-shadow: 0 0 18px rgba(79, 124, 255, 0.55);
-        transition: 0.2s ease;
-      }
-
-      .btn-primary:hover {
-        background: linear-gradient(135deg, #6f94ff, #3e6bff);
-        transform: translateY(-2px);
-      }
-
-      .btn-secondary {
-        background: transparent;
-        color: #d1d5db;
-        font-weight: 500;
-        padding: 12px 34px;
-        border-radius: 50px;
-        border: 1px solid rgba(140, 140, 255, 0.4);
-        cursor: pointer;
-        font-size: 0.93rem;
-        transition: 0.2s ease;
-      }
-
-      .btn-secondary:hover {
-        border-color: rgba(200, 200, 255, 0.8);
-        color: #fff;
-        background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-2px);
+        flex-direction: column;
+        align-items: stretch;
       }
 
       .admin-btn-row .btn-primary,
       .admin-btn-row .btn-secondary {
-        border-radius: 999px;
-        padding: 10px 22px;
-        font-size: 0.9rem;
-      }
-
-      #formMsg {
-        margin-top: 8px;
-      }
-
-      /* Container do select customizado */
-      .custom-select {
-        position: relative;
         width: 100%;
-        cursor: pointer;
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 600px) {
+      body.admin-page {
+        padding: 12px;
       }
 
-      .custom-select-display {
-        background: rgba(15, 23, 42, 0.85);
-        border: 1px solid rgba(148, 163, 184, 0.6);
-        padding: 10px 16px;
-        border-radius: 999px;
-        color: #e5e7eb;
-        font-size: 0.9rem;
-        user-select: none;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+      .admin-header,
+      .admin-card {
+        padding: 16px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
       }
 
-      .custom-select-list {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
-        width: 100%;
-        background: rgba(15, 23, 42, 0.95);
-        border: 1px solid rgba(148, 163, 184, 0.45);
-        border-radius: 14px;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-        padding: 6px 0;
-        display: none;
-        max-height: 180px;
-        overflow-y: auto; /* scroll só vertical quando precisar */
-        overflow-x: hidden; /* 🚫 sem scroll horizontal */
-        z-index: 50;
+      .admin-title h1 {
+        font-size: 1.2rem;
       }
 
-      .custom-select-item {
-        padding: 10px 16px;
-        font-size: 0.9rem;
-        color: #e5e7eb;
-      }
-
-      .custom-select-item:hover {
-        background: rgba(59, 130, 246, 0.25);
-      }
-
-      /* Ícone de seta */
-      .custom-select-arrow {
+      .admin-title p {
         font-size: 0.8rem;
-        opacity: 0.7;
       }
 
-      /* ===================================
-                 TEMA CLARO
-      =================================== */
-
-      /* Corpo / background / texto */
-      body.admin-page.light-theme {
-        background: #f3f4f6;
-        color: #0f172a;
+      .btn-primary,
+      .btn-secondary {
+        font-size: 0.85rem;
+        padding: 10px 20px;
       }
+    }
+  </style>
+</head>
 
-      body.admin-page.light-theme .admin-header,
-      body.admin-page.light-theme .admin-card {
-        background: rgba(255, 255, 255, 0.96);
-        border-color: #e5e7eb;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-        color: #0f172a;
-      }
-
-      body.admin-page.light-theme .admin-title p {
-        color: #6b7280;
-      }
-
-      /* Avatar mais claro no tema branco */
-      body.admin-page.light-theme .admin-avatar {
-        background: radial-gradient(circle at 30% 30%, #4f46e5, #e5e7ff);
-        color: #111827;
-        box-shadow: 0 0 0 2px #e5e7eb;
-      }
-
-      /* Botão de tema no claro */
-      body.admin-page.light-theme .btn-icon {
-        background: #f9fafb;
-        color: #111827;
-        border-color: #e5e7eb;
-      }
-
-      /* Inputs no tema claro */
-      body.admin-page.light-theme input[type="text"],
-      body.admin-page.light-theme input[type="email"],
-      body.admin-page.light-theme input[type="password"] {
-        background: #f9fafb;
-        color: #111827;
-        border: 1px solid #d1d5db;
-      }
-
-      body.admin-page.light-theme input::placeholder {
-        color: #9ca3af;
-      }
-
-      body.admin-page.light-theme .search-box input {
-        background: #f9fafb;
-        color: #111827;
-        border-color: #d1d5db;
-      }
-
-      /* Select customizado no tema claro */
-      body.admin-page.light-theme .custom-select-display {
-        background: #ffffff;
-        color: #111827;
-        border-color: #cbd5e1;
-      }
-
-      body.admin-page.light-theme .custom-select-list {
-        background: #ffffff;
-        border-color: #cbd5e1;
-      }
-
-      body.admin-page.light-theme .custom-select-item {
-        color: #111827;
-      }
-
-      body.admin-page.light-theme .custom-select-item:hover {
-        background: rgba(59, 130, 246, 0.12);
-      }
-
-      .custom-select-list::-webkit-scrollbar {
-        display: none;
-      }
-
-      .custom-select-list {
-        scrollbar-width: none; /* Firefox */
-      }
-
-      /* Badges mais fortes */
-      body.admin-page.light-theme .badge-admin {
-        background: #e0e7ff;
-        color: #1d4ed8;
-      }
-
-      body.admin-page.light-theme .badge-user {
-        background: #dbeafe;
-        color: #1d4ed8;
-      }
-
-      body.admin-page.light-theme .badge-ativo {
-        background: #dcfce7;
-        color: #16a34a;
-      }
-
-      body.admin-page.light-theme .badge-inativo {
-        background: #fee2e2;
-        color: #b91c1c;
-      }
-
-      /* Toggles no tema claro */
-      body.admin-page.light-theme .toggle-track,
-      body.admin-page.light-theme .mini-toggle-track {
-        background: #e5e7eb;
-        border-color: #cbd5e1;
-      }
-
-      body.admin-page.light-theme .toggle input:checked + .toggle-track,
-      body.admin-page.light-theme
-        .mini-toggle
-        input:checked
-        + .mini-toggle-track {
-        background: #bfdbfe;
-        border-color: #3b82f6;
-      }
-
-      /* Botões no tema claro */
-      body.admin-page.light-theme .btn-primary {
-        box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
-      }
-
-      body.admin-page.light-theme .btn-secondary {
-        border-color: #cbd5e1;
-        color: #111827;
-      }
-
-      body.admin-page.light-theme .btn-secondary:hover {
-        background: #e5e7eb;
-        border-color: #94a3b8;
-        color: #0f172a;
-      }
-
-      /* ===================================
-                 RESPONSIVO
-      =================================== */
-
-      @media (max-width: 1024px) {
-        html,
-        body {
-          height: auto;
-          overflow-y: auto !important;
-          overflow-x: hidden !important;
-        }
-
-        body.admin-page {
-          padding: 16px;
-        }
-
-        .admin-container {
-          height: auto;
-          min-height: 100vh;
-          gap: 16px;
-        }
-
-        .admin-header {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 12px;
-        }
-
-        .admin-user-info {
-          width: 100%;
-          justify-content: space-between;
-        }
-
-        .admin-grid {
-          grid-template-columns: 1fr;
-          height: auto;
-        }
-
-        .table-area {
-          height: auto;
-          max-height: 60vh;
-        }
-
-        .admin-row-3 {
-          flex-direction: column;
-        }
-
-        .admin-row-sub {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 10px;
-        }
-
-        .admin-btn-row {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .admin-btn-row .btn-primary,
-        .admin-btn-row .btn-secondary {
-          width: 100%;
-          text-align: center;
-        }
-      }
-
-      @media (max-width: 600px) {
-        body.admin-page {
-          padding: 12px;
-        }
-
-        .admin-header,
-        .admin-card {
-          padding: 16px;
-          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
-        }
-
-        .admin-title h1 {
-          font-size: 1.2rem;
-        }
-
-        .admin-title p {
-          font-size: 0.8rem;
-        }
-
-        .btn-primary,
-        .btn-secondary {
-          font-size: 0.85rem;
-          padding: 10px 20px;
-        }
-      }
-    </style>
-  </head>
-
-  <body class="admin-page">
-    <div class="admin-container">
-      <!-- HEADER -->
-      <header class="admin-header">
-        <div class="admin-title">
-          <h1>Painel Administrativo</h1>
-          <p>Gerencie usuários, permissões e acesso.</p>
-        </div>
-
-        <div class="admin-user-info">
-          <div class="admin-user-box">
-            <div class="admin-avatar" id="adminAvatar">A</div>
-            <div class="admin-user-text">
-              <div id="adminUserName">Admin</div>
-              <span class="badge-role" id="adminUserRole">admin</span>
-            </div>
-          </div>
-
-          <div class="admin-user-actions">
-            <button id="themeToggle" class="btn-icon" title="Alternar tema">
-              🌙
-            </button>
-            <button
-              id="logoutBtn"
-              class="btn-secondary"
-              style="padding: 6px 14px"
-            >
-              Sair
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <!-- GRID -->
-      <div class="admin-grid">
-        <!-- ESQUERDA – FORM -->
-        <section class="admin-card admin-card-left">
-          <h2>Cadastro / Edição de usuário</h2>
-          <p>
-            Preencha os dados abaixo para criar um novo usuário ou editar um
-            existente.
-          </p>
-
-          <form id="userForm" class="admin-form" autocomplete="off">
-            <input type="hidden" id="userId" />
-
-            <label for="nome">Nome</label>
-            <input id="nome" type="text" placeholder="Nome completo" required />
-
-            <label for="email" style="margin-top: 8px">E-mail</label>
-            <input
-              id="email"
-              type="email"
-              placeholder="usuario@empresa.com"
-              required
-            />
-
-            <label for="senha" style="margin-top: 8px">Senha</label>
-            <input id="senha" type="password" placeholder="••••••••" />
-
-            <!-- PERFIL -->
-            <div class="admin-row-3">
-              <div class="admin-col perfil">
-                <label for="role">Perfil</label>
-                <div class="custom-select" id="selectRole">
-                  <div class="custom-select-display">
-                    <span id="selectRoleText">Usuário</span>
-                    <span class="custom-select-arrow">▼</span>
-                  </div>
-
-                  <div class="custom-select-list">
-                    <div class="custom-select-item" data-value="user">
-                      Usuário
-                    </div>
-                    <div class="custom-select-item" data-value="admin">
-                      Administrador
-                    </div>
-                  </div>
-
-                  <select id="role" style="display: none">
-                    <option value="user">Usuário</option>
-                    <option value="admin">Administrador</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <!-- STATUS + PERMISSÕES -->
-            <div class="admin-row-sub">
-              <div class="admin-col status">
-                <label>Status</label>
-                <label class="toggle">
-                  <input type="checkbox" id="ativo" checked />
-                  <span class="toggle-track">
-                    <span class="toggle-thumb"></span>
-                  </span>
-                  <span class="toggle-label-text">Ativo</span>
-                </label>
-              </div>
-
-              <div class="admin-col permissoes">
-                <label>Permissões</label>
-                <label class="toggle">
-                  <input type="checkbox" id="podeLote" checked />
-                  <span class="toggle-track">
-                    <span class="toggle-thumb"></span>
-                  </span>
-                  <span class="toggle-label-text">
-                    Pode usar consulta em lote (planilha)
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            <!-- BOTÕES -->
-            <div class="admin-btn-row">
-              <button type="submit" class="btn-primary" id="salvarBtn">
-                💾 Salvar
-              </button>
-
-              <button type="button" class="btn-secondary" id="limparFormBtn">
-                🧹 Limpar
-              </button>
-            </div>
-
-            <div id="formMsg" class="progress-text"></div>
-          </form>
-        </section>
-
-        <!-- DIREITA – TABELA -->
-        <section class="admin-card">
-          <h2>Usuários cadastrados</h2>
-
-          <div class="search-box">
-            <input
-              type="text"
-              id="buscaUsuario"
-              placeholder="Pesquisar por nome ou e-mail..."
-            />
-          </div>
-
-          <div class="table-area">
-            <table id="usersTable">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>E-mail</th>
-                  <th>Perfil</th>
-                  <th>Lote</th>
-                  <th>Status</th>
-                  <th style="min-width: 140px">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="no-data-row">
-                  <td colspan="6" class="no-data">
-                    Nenhum usuário cadastrado.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div id="paginacaoUsuarios" class="admin-pagination"></div>
-        </section>
+<body class="admin-page">
+  <div class="admin-container">
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="admin-title">
+        <h1>Painel Administrativo</h1>
+        <p>Gerencie usuários, permissões e acesso.</p>
       </div>
+
+      <div class="admin-user-info">
+        <div class="admin-user-box">
+          <div class="admin-avatar" id="adminAvatar">A</div>
+          <div class="admin-user-text">
+            <div id="adminUserName">Admin</div>
+            <span class="badge-role" id="adminUserRole">admin</span>
+          </div>
+        </div>
+
+        <div class="admin-user-actions">
+          <button id="themeToggle" class="btn-icon" title="Alternar tema">
+            🌙
+          </button>
+          <button id="logoutBtn" class="btn-secondary" style="padding: 6px 14px">
+            Sair
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- GRID -->
+    <div class="admin-grid">
+      <!-- ESQUERDA – FORM -->
+      <section class="admin-card admin-card-left">
+        <h2>Cadastro / Edição de usuário</h2>
+        <p>
+          Preencha os dados abaixo para criar um novo usuário ou editar um
+          existente.
+        </p>
+
+        <form id="userForm" class="admin-form" autocomplete="off">
+          <input type="hidden" id="userId" />
+
+          <label for="nome">Nome</label>
+          <input id="nome" type="text" placeholder="Nome completo" required />
+
+          <label for="email" style="margin-top: 8px">E-mail</label>
+          <input id="email" type="email" placeholder="usuario@empresa.com" required />
+
+          <label for="senha" style="margin-top: 8px">Senha</label>
+          <input id="senha" type="password" placeholder="••••••••" />
+
+          <!-- PERFIL -->
+          <div class="admin-row-3">
+            <div class="admin-col perfil">
+              <label for="role">Perfil</label>
+              <div class="custom-select" id="selectRole">
+                <div class="custom-select-display">
+                  <span id="selectRoleText">Usuário</span>
+                  <span class="custom-select-arrow">▼</span>
+                </div>
+
+                <div class="custom-select-list">
+                  <div class="custom-select-item" data-value="user">
+                    Usuário
+                  </div>
+                  <div class="custom-select-item" data-value="admin">
+                    Administrador
+                  </div>
+                </div>
+
+                <select id="role" style="display: none">
+                  <option value="user">Usuário</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- STATUS + PERMISSÕES -->
+          <div class="admin-row-sub">
+            <div class="admin-col status">
+              <label>Status</label>
+              <label class="toggle">
+                <input type="checkbox" id="ativo" checked />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+                <span class="toggle-label-text">Ativo</span>
+              </label>
+            </div>
+
+            <div class="admin-col permissoes">
+              <label>Permissões</label>
+              <label class="toggle">
+                <input type="checkbox" id="podeLote" checked />
+                <span class="toggle-track">
+                  <span class="toggle-thumb"></span>
+                </span>
+                <span class="toggle-label-text">
+                  Pode usar consulta em lote (planilha)
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- BOTÕES -->
+          <div class="admin-btn-row">
+            <button type="submit" class="btn-primary" id="salvarBtn">
+              💾 Salvar
+            </button>
+
+            <button type="button" class="btn-secondary" id="limparFormBtn">
+              🧹 Limpar
+            </button>
+          </div>
+
+          <div id="formMsg" class="progress-text"></div>
+        </form>
+      </section>
+
+      <!-- DIREITA – TABELA -->
+      <section class="admin-card">
+        <h2>Usuários cadastrados</h2>
+
+        <div class="search-box">
+          <input type="text" id="buscaUsuario" placeholder="Pesquisar por nome ou e-mail..." />
+        </div>
+
+        <div class="table-area">
+          <table id="usersTable">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>Perfil</th>
+                <th>Lote</th>
+                <th>Status</th>
+                <th style="min-width: 140px">Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="no-data-row">
+                <td colspan="6" class="no-data">
+                  Nenhum usuário cadastrado.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="paginacaoUsuarios" class="admin-pagination"></div>
+      </section>
     </div>
+  </div>
 
-    <script>
-      /* ----------------------------------
-        CONFIG & HELPERS
-      ---------------------------------- */
+  <script>
+    /* ----------------------------------
+      CONFIG & HELPERS
+    ---------------------------------- */
 
-      const isLocalHost =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1";
+    const isLocalHost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
 
-      const BACKEND_BASE_URL = isLocalHost
-        ? "http://localhost:3000"
-        : window.location.origin;
+    const BACKEND_BASE_URL = isLocalHost
+      ? "http://localhost:3000"
+      : window.location.origin;
 
-      function getToken() {
-        return localStorage.getItem("authToken") || "";
+    function getToken() {
+      return (
+        localStorage.getItem("radar_token") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        ""
+      );
+    }
+
+
+    function gerarAvatarInicial(nome) {
+      if (!nome || !nome.length) return "A";
+      return nome.trim()[0].toUpperCase();
+    }
+
+    // igual ao home.js
+    function decodeJwtPayload(token) {
+      try {
+        const [, payloadBase64] = token.split(".");
+        if (!payloadBase64) return {};
+        const normalized = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
+        const json = atob(normalized);
+        return JSON.parse(json);
+      } catch (err) {
+        console.error("Erro ao decodificar token:", err);
+        return {};
       }
+    }
 
-      function gerarAvatarInicial(nome) {
-        if (!nome || !nome.length) return "A";
-        return nome.trim()[0].toUpperCase();
-      }
+    function getCurrentUser() {
+      const token = getToken();
+      if (!token) return null;
 
-      /* ----------------------------------
-        ELEMENTOS
-      ---------------------------------- */
+      const payload = decodeJwtPayload(token);
 
-      const adminUserNameEl = document.getElementById("adminUserName");
-      const adminUserRoleEl = document.getElementById("adminUserRole");
-      const adminAvatarEl = document.getElementById("adminAvatar");
-      const themeToggle = document.getElementById("themeToggle");
-      const logoutBtn = document.getElementById("logoutBtn");
-
-      const userForm = document.getElementById("userForm");
-      const userIdInput = document.getElementById("userId");
-      const nomeInput = document.getElementById("nome");
-      const emailInput = document.getElementById("email");
-      const senhaInput = document.getElementById("senha");
-      const roleSelect = document.getElementById("role");
-      const ativoCheckbox = document.getElementById("ativo");
-      const podeLoteCheckbox = document.getElementById("podeLote");
-      const salvarBtn = document.getElementById("salvarBtn");
-      const limparFormBtn = document.getElementById("limparFormBtn");
-      const formMsg = document.getElementById("formMsg");
-
-      const usersTableBody = document.querySelector("#usersTable tbody");
-      const paginationEl = document.getElementById("paginacaoUsuarios");
-
-      let usuarios = [];
-      let paginaAtual = 1;
-      const porPagina = 6;
-
-      /* ----------------------------------
-        PROTEÇÃO DE ROTA
-      ---------------------------------- */
-
-      (function proteger() {
-        const token = getToken();
-        const nome = localStorage.getItem("usuarioNome") || "Administrador";
-        const role = localStorage.getItem("usuarioRole") || "user";
-
-        if (!token) {
-          window.location.href = "login.html";
-          return;
-        }
-
-        if (role !== "admin") {
-          window.location.href = "index.html";
-          return;
-        }
-
-        adminUserNameEl.textContent = nome;
-        adminUserRoleEl.textContent = role;
-        adminAvatarEl.textContent = gerarAvatarInicial(nome);
-      })();
-
-      /* ----------------------------------
-        THEME: DARK / LIGHT
-      ---------------------------------- */
-
-      if (!localStorage.getItem("adminTheme")) {
-        localStorage.setItem("adminTheme", "dark");
-      }
-
-      function aplicarTema() {
-        const tema = localStorage.getItem("adminTheme");
-
-        if (tema === "light") {
-          document.body.classList.add("light-theme");
-          themeToggle.textContent = "☀️";
-        } else {
-          document.body.classList.remove("light-theme");
-          themeToggle.textContent = "🌙";
-        }
-      }
-
-      aplicarTema();
-
-      themeToggle.addEventListener("click", () => {
-        const atual = localStorage.getItem("adminTheme");
-        const novo = atual === "light" ? "dark" : "light";
-        localStorage.setItem("adminTheme", novo);
-        aplicarTema();
-      });
-
-      /* ----------------------------------
-        LOGOUT
-      ---------------------------------- */
-
-      logoutBtn.onclick = () => {
-        localStorage.clear();
-        window.location.href = "login.html";
+      return {
+        ...payload,
+        nome: payload.nome || payload.name || "",
+        role: payload.role || "user",
+        permissions: payload.permissions || {},
       };
+    }
 
-      /* ----------------------------------
-        MSG FORM
-      ---------------------------------- */
+    /* ----------------------------------
+      ELEMENTOS
+    ---------------------------------- */
 
-      function setFormMessage(msg, err = false) {
-        formMsg.textContent = msg || "";
-        formMsg.style.color = err ? "#fca5a5" : "#9ca3af";
+    const adminUserNameEl = document.getElementById("adminUserName");
+    const adminUserRoleEl = document.getElementById("adminUserRole");
+    const adminAvatarEl = document.getElementById("adminAvatar");
+    const themeToggle = document.getElementById("themeToggle");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    const userForm = document.getElementById("userForm");
+    const userIdInput = document.getElementById("userId");
+    const nomeInput = document.getElementById("nome");
+    const emailInput = document.getElementById("email");
+    const senhaInput = document.getElementById("senha");
+    const roleSelect = document.getElementById("role");
+    const ativoCheckbox = document.getElementById("ativo");
+    const podeLoteCheckbox = document.getElementById("podeLote");
+    const salvarBtn = document.getElementById("salvarBtn");
+    const limparFormBtn = document.getElementById("limparFormBtn");
+    const formMsg = document.getElementById("formMsg");
+
+    const usersTableBody = document.querySelector("#usersTable tbody");
+    const paginationEl = document.getElementById("paginacaoUsuarios");
+
+    let usuarios = [];
+    let paginaAtual = 1;
+    const porPagina = 6;
+
+    /* ----------------------------------
+   PROTEÇÃO DE ROTA
+ ---------------------------------- */
+    (function proteger() {
+      const token = getToken();
+      if (!token) {
+        window.location.href = "login.html";
+        return;
       }
 
-      /* ----------------------------------
-        LIMPAR FORM
-      ---------------------------------- */
+      const user = getCurrentUser();
+      const roleLS = localStorage.getItem("usuarioRole") || "";
 
-      function limparFormulario() {
-        userIdInput.value = "";
-        nomeInput.value = "";
-        emailInput.value = "";
-        senhaInput.value = "";
-        roleSelect.value = "user";
-        ativoCheckbox.checked = true;
-        podeLoteCheckbox.checked = true;
-        salvarBtn.textContent = "💾 Salvar";
-        setFormMessage("");
+      // verifica admin pelo token OU pelo localStorage (igual home.js)
+      const isAdminFromToken =
+        user && (user.role === "admin" || !!user.permissions?.admin);
+      const isAdminFromLS = roleLS === "admin";
 
-        const selectText = document.getElementById("selectRoleText");
-        if (selectText) {
-          selectText.textContent = "Usuário";
+      const isAdmin = isAdminFromToken || isAdminFromLS;
+
+      if (!isAdmin) {
+        alert("Acesso restrito ao administrador do sistema.");
+        window.location.href = "home.html";
+        return;
+      }
+
+      const nome =
+        (user && user.nome) ||
+        localStorage.getItem("usuarioNome") ||
+        "Administrador";
+      const role = (user && user.role) || roleLS || "admin";
+
+      adminUserNameEl.textContent = nome;
+      adminUserRoleEl.textContent = role;
+      adminAvatarEl.textContent = gerarAvatarInicial(nome);
+    })();
+
+    /* ----------------------------------
+      THEME: DARK / LIGHT
+    ---------------------------------- */
+
+    if (!localStorage.getItem("adminTheme")) {
+      localStorage.setItem("adminTheme", "dark");
+    }
+
+    function aplicarTema() {
+      const tema = localStorage.getItem("adminTheme");
+
+      if (tema === "light") {
+        document.body.classList.add("light-theme");
+        themeToggle.textContent = "☀️";
+      } else {
+        document.body.classList.remove("light-theme");
+        themeToggle.textContent = "🌙";
+      }
+    }
+
+    aplicarTema();
+
+    themeToggle.addEventListener("click", () => {
+      const atual = localStorage.getItem("adminTheme");
+      const novo = atual === "light" ? "dark" : "light";
+      localStorage.setItem("adminTheme", novo);
+      aplicarTema();
+    });
+
+    /* ----------------------------------
+      LOGOUT
+    ---------------------------------- */
+
+    logoutBtn.onclick = () => {
+      localStorage.clear();
+      window.location.href = "login.html";
+    };
+
+    /* ----------------------------------
+      MSG FORM
+    ---------------------------------- */
+
+    function setFormMessage(msg, err = false) {
+      formMsg.textContent = msg || "";
+      formMsg.style.color = err ? "#fca5a5" : "#9ca3af";
+    }
+
+    /* ----------------------------------
+      LIMPAR FORM
+    ---------------------------------- */
+
+    function limparFormulario() {
+      userIdInput.value = "";
+      nomeInput.value = "";
+      emailInput.value = "";
+      senhaInput.value = "";
+      roleSelect.value = "user";
+      ativoCheckbox.checked = true;
+      podeLoteCheckbox.checked = true;
+      salvarBtn.textContent = "💾 Salvar";
+      setFormMessage("");
+
+      const selectText = document.getElementById("selectRoleText");
+      if (selectText) {
+        selectText.textContent = "Usuário";
+      }
+    }
+
+    limparFormBtn.addEventListener("click", limparFormulario);
+
+    /* ----------------------------------
+      PAGINAÇÃO
+    ---------------------------------- */
+
+    function paginar(array, page, perPage) {
+      const start = (page - 1) * perPage;
+      return array.slice(start, start + perPage);
+    }
+
+    function renderizarPaginacao(total) {
+      const paginas = Math.ceil(total / porPagina);
+      paginationEl.innerHTML = "";
+
+      if (paginas <= 1) return;
+
+      for (let p = 1; p <= paginas; p++) {
+        const btn = document.createElement("button");
+        btn.textContent = p;
+        btn.className = "btn-secondary btn-sm";
+        if (p === paginaAtual) {
+          btn.style.background = "rgba(255,255,255,0.15)";
         }
+        btn.onclick = () => {
+          paginaAtual = p;
+          renderizarUsuarios();
+        };
+        paginationEl.appendChild(btn);
       }
+    }
 
-      limparFormBtn.addEventListener("click", limparFormulario);
+    /* ----------------------------------
+      RENDERIZAR USUÁRIOS
+    ---------------------------------- */
 
-      /* ----------------------------------
-        PAGINAÇÃO
-      ---------------------------------- */
+    function renderizarUsuarios() {
+      usersTableBody.innerHTML = "";
 
-      function paginar(array, page, perPage) {
-        const start = (page - 1) * perPage;
-        return array.slice(start, start + perPage);
-      }
-
-      function renderizarPaginacao(total) {
-        const paginas = Math.ceil(total / porPagina);
-        paginationEl.innerHTML = "";
-
-        if (paginas <= 1) return;
-
-        for (let p = 1; p <= paginas; p++) {
-          const btn = document.createElement("button");
-          btn.textContent = p;
-          btn.className = "btn-secondary btn-sm";
-          if (p === paginaAtual) {
-            btn.style.background = "rgba(255,255,255,0.15)";
-          }
-          btn.onclick = () => {
-            paginaAtual = p;
-            renderizarUsuarios();
-          };
-          paginationEl.appendChild(btn);
-        }
-      }
-
-      /* ----------------------------------
-        RENDERIZAR USUÁRIOS
-      ---------------------------------- */
-
-      function renderizarUsuarios() {
-        usersTableBody.innerHTML = "";
-
-        if (!usuarios.length) {
-          usersTableBody.innerHTML = `
+      if (!usuarios.length) {
+        usersTableBody.innerHTML = `
             <tr class="no-data-row">
               <td colspan="6" class="no-data">Nenhum usuário cadastrado.</td>
             </tr>`;
-          return;
-        }
+        return;
+      }
 
-        const listaPagina = paginar(usuarios, paginaAtual, porPagina);
-        renderizarPaginacao(usuarios.length);
+      const listaPagina = paginar(usuarios, paginaAtual, porPagina);
+      renderizarPaginacao(usuarios.length);
 
-        listaPagina.forEach((u) => {
-          const tr = document.createElement("tr");
-          tr.dataset.nome = (u.nome || "").toLowerCase();
-          tr.dataset.email = (u.email || "").toLowerCase();
+      listaPagina.forEach((u) => {
+        const tr = document.createElement("tr");
+        tr.dataset.nome = (u.nome || "").toLowerCase();
+        tr.dataset.email = (u.email || "").toLowerCase();
 
-          tr.innerHTML = `
+        tr.innerHTML = `
             <td>${u.nome || ""}</td>
             <td>${u.email || ""}</td>
 
             <td>
-              <span class="badge ${
-                u.role === "admin" ? "badge-admin" : "badge-user"
-              }">${u.role}</span>
+              <span class="badge ${u.role === "admin" ? "badge-admin" : "badge-user"
+          }">${u.role}</span>
             </td>
 
             <td>
               <label class="toggle toggle-table">
-                <input type="checkbox" class="toggle-lote" data-id="${u.id}" ${
-            u.pode_lote ? "checked" : ""
+                <input type="checkbox" class="toggle-lote" data-id="${u.id}" ${u.pode_lote ? "checked" : ""
           }>
                 <span class="toggle-track">
                   <span class="toggle-thumb"></span>
@@ -1113,277 +1150,276 @@
 
             <td>
               <div class="admin-actions">
-                <button class="btn-secondary btn-sm edit-user" data-id="${
-                  u.id
-                }">Editar</button>
-                <button class="btn-secondary btn-sm delete-user" data-id="${
-                  u.id
-                }">Excluir</button>
+                <button class="btn-secondary btn-sm edit-user" data-id="${u.id
+          }">Editar</button>
+                <button class="btn-secondary btn-sm delete-user" data-id="${u.id
+          }">Excluir</button>
               </div>
             </td>
           `;
 
-          usersTableBody.appendChild(tr);
-        });
+        usersTableBody.appendChild(tr);
+      });
+    }
+
+    /* ----------------------------------
+      BUSCA / FILTRO
+    ---------------------------------- */
+
+    document.getElementById("buscaUsuario").addEventListener("input", (e) => {
+      const termo = e.target.value.toLowerCase();
+
+      document.querySelectorAll("#usersTable tbody tr").forEach((linha) => {
+        const nome = linha.dataset.nome || "";
+        const email = linha.dataset.email || "";
+
+        linha.style.display =
+          nome.includes(termo) || email.includes(termo) ? "" : "none";
+      });
+    });
+
+    /* ----------------------------------
+      CARREGAR USUÁRIOS DO BACKEND
+    ---------------------------------- */
+
+    async function carregarUsuarios() {
+      const token = getToken();
+
+      if (!token) {
+        console.warn("Sem token, redirecionando para login...");
+        alert("Sessão expirada. Faça login novamente.");
+        window.location.href = "login.html";
+        return;
       }
 
-      /* ----------------------------------
-        BUSCA / FILTRO
-      ---------------------------------- */
-
-      document.getElementById("buscaUsuario").addEventListener("input", (e) => {
-        const termo = e.target.value.toLowerCase();
-
-        document.querySelectorAll("#usersTable tbody tr").forEach((linha) => {
-          const nome = linha.dataset.nome || "";
-          const email = linha.dataset.email || "";
-
-          linha.style.display =
-            nome.includes(termo) || email.includes(termo) ? "" : "none";
+      try {
+        const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
         });
-      });
 
-      /* ----------------------------------
-        CARREGAR USUÁRIOS DO BACKEND
-      ---------------------------------- */
+        const data = await resp.json().catch(() => ({}));
 
-      async function carregarUsuarios() {
-        const token = getToken();
-
-        if (!token) {
-          console.warn("Sem token, redirecionando para login...");
-          alert("Sessão expirada. Faça login novamente.");
-          window.location.href = "login.html";
-          return;
+        if (!resp.ok) {
+          throw new Error(data.error || "Erro ao carregar usuários");
         }
 
-        try {
-          const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-          });
+        // 👉 aqui usamos o array GLOBAL
+        usuarios = Array.isArray(data) ? data : [];
+        paginaAtual = 1;
+        renderizarUsuarios();
+        setFormMessage(""); // limpa msg de erro se tinha
+      } catch (e) {
+        console.error("Falha ao carregar usuários:", e);
+        setFormMessage("Erro ao carregar usuários.", true);
+        usuarios = [];
+        renderizarUsuarios();
+      }
+    }
 
-          const data = await resp.json().catch(() => ({}));
+    /* ----------------------------------
+      SALVAR USUÁRIO (CRIAR / EDITAR)
+    ---------------------------------- */
 
-          if (!resp.ok) {
-            throw new Error(data.error || "Erro ao carregar usuários");
-          }
+    userForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-          // 👉 aqui usamos o array GLOBAL
-          usuarios = Array.isArray(data) ? data : [];
-          paginaAtual = 1;
-          renderizarUsuarios();
-          setFormMessage(""); // limpa msg de erro se tinha
-        } catch (e) {
-          console.error("Falha ao carregar usuários:", e);
-          setFormMessage("Erro ao carregar usuários.", true);
-          usuarios = [];
-          renderizarUsuarios();
-        }
+      const id = userIdInput.value || null;
+      const nome = nomeInput.value.trim();
+      const email = emailInput.value.trim();
+      const senha = senhaInput.value.trim();
+
+      if (!nome || !email) {
+        setFormMessage("Nome e e-mail são obrigatórios.", true);
+        return;
       }
 
-      /* ----------------------------------
-        SALVAR USUÁRIO (CRIAR / EDITAR)
-      ---------------------------------- */
+      if (!id && !senha) {
+        setFormMessage("Senha obrigatória para novo usuário.", true);
+        return;
+      }
 
-      userForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
+      const payload = {
+        nome,
+        email,
+        role: roleSelect.value,
+        ativo: !!ativoCheckbox.checked,
+        pode_lote: !!podeLoteCheckbox.checked,
+      };
 
-        const id = userIdInput.value || null;
-        const nome = nomeInput.value.trim();
-        const email = emailInput.value.trim();
-        const senha = senhaInput.value.trim();
+      if (senha) payload.senha = senha;
 
-        if (!nome || !email) {
-          setFormMessage("Nome e e-mail são obrigatórios.", true);
-          return;
-        }
+      salvarBtn.disabled = true;
+      setFormMessage("Salvando usuário...");
 
-        if (!id && !senha) {
-          setFormMessage("Senha obrigatória para novo usuário.", true);
-          return;
-        }
+      try {
+        const url = id
+          ? `${BACKEND_BASE_URL}/admin/usuarios/${id}`
+          : `${BACKEND_BASE_URL}/admin/usuarios`;
 
-        const payload = {
-          nome,
-          email,
-          role: roleSelect.value,
-          ativo: !!ativoCheckbox.checked,
-          pode_lote: !!podeLoteCheckbox.checked,
-        };
+        const method = id ? "PUT" : "POST";
 
-        if (senha) payload.senha = senha;
+        const resp = await fetch(url, {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + getToken(),
+          },
+          body: JSON.stringify(payload),
+        });
 
-        salvarBtn.disabled = true;
-        setFormMessage("Salvando usuário...");
+        const data = await resp.json().catch(() => ({}));
 
-        try {
-          const url = id
-            ? `${BACKEND_BASE_URL}/admin/usuarios/${id}`
-            : `${BACKEND_BASE_URL}/admin/usuarios`;
-
-          const method = id ? "PUT" : "POST";
-
-          const resp = await fetch(url, {
-            method,
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + getToken(),
-            },
-            body: JSON.stringify(payload),
-          });
-
-          const data = await resp.json().catch(() => ({}));
-
-          if (!resp.ok) {
-            console.error("Erro salvar usuário:", data);
-            setFormMessage(
-              data.error || "Não foi possível salvar o usuário.",
-              true
-            );
-          } else {
-            setFormMessage(id ? "Usuário atualizado!" : "Usuário criado!");
-            limparFormulario();
-            await carregarUsuarios();
-          }
-        } catch (err) {
-          console.error(err);
-          setFormMessage("Erro inesperado ao salvar usuário.", true);
-        } finally {
-          salvarBtn.disabled = false;
-        }
-      });
-
-      /* ----------------------------------
-        EDITAR / EXCLUIR / TOGGLE LOTE
-      ---------------------------------- */
-
-      usersTableBody.addEventListener("click", async (e) => {
-        const btn = e.target;
-
-        // EDITAR
-        if (btn.classList.contains("edit-user")) {
-          const id = btn.dataset.id;
-          const u = usuarios.find((x) => String(x.id) === String(id));
-          if (!u) return;
-
-          userIdInput.value = u.id;
-          nomeInput.value = u.nome;
-          emailInput.value = u.email;
-          senhaInput.value = "";
-          roleSelect.value = u.role;
-          ativoCheckbox.checked = !!u.ativo;
-          podeLoteCheckbox.checked = !!u.pode_lote;
-
-          salvarBtn.textContent = "Atualizar";
-          setFormMessage("Editando usuário...");
-        }
-
-        // EXCLUIR
-        if (btn.classList.contains("delete-user")) {
-          const id = btn.dataset.id;
-
-          if (!confirm("Excluir este usuário?")) return;
-
-          try {
-            const resp = await fetch(
-              `${BACKEND_BASE_URL}/admin/usuarios/${id}`,
-              {
-                method: "DELETE",
-                headers: { Authorization: "Bearer " + getToken() },
-              }
-            );
-
-            const data = await resp.json().catch(() => ({}));
-
-            if (!resp.ok) {
-              console.error("Erro excluir:", data);
-              setFormMessage(data.error || "Erro ao excluir usuário.", true);
-            } else {
-              setFormMessage("Usuário excluído.");
-              await carregarUsuarios();
-            }
-          } catch (err) {
-            console.error(err);
-            setFormMessage("Erro ao excluir usuário.", true);
-          }
-        }
-      });
-
-      // Toggle lote direto na tabela
-      usersTableBody.addEventListener("change", async (e) => {
-        const input = e.target;
-        if (!input.classList.contains("toggle-lote")) return;
-
-        const id = input.dataset.id;
-        const novoValor = !!input.checked;
-
-        try {
-          const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios/${id}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: "Bearer " + getToken(),
-            },
-            body: JSON.stringify({ pode_lote: novoValor }),
-          });
-
-          const data = await resp.json().catch(() => ({}));
-
-          if (!resp.ok) {
-            console.error("Erro atualizar toggle:", data);
-            setFormMessage(data.error || "Erro ao atualizar permissão.", true);
-            await carregarUsuarios();
-          } else {
-            await carregarUsuarios();
-          }
-        } catch (err) {
-          console.error(err);
-          setFormMessage("Erro ao atualizar permissão de lote.", true);
+        if (!resp.ok) {
+          console.error("Erro salvar usuário:", data);
+          setFormMessage(
+            data.error || "Não foi possível salvar o usuário.",
+            true
+          );
+        } else {
+          setFormMessage(id ? "Usuário atualizado!" : "Usuário criado!");
+          limparFormulario();
           await carregarUsuarios();
         }
-      });
+      } catch (err) {
+        console.error(err);
+        setFormMessage("Erro inesperado ao salvar usuário.", true);
+      } finally {
+        salvarBtn.disabled = false;
+      }
+    });
 
-      // SELECT CUSTOMIZADO
-      const selectRole = document.getElementById("selectRole");
-      const selectDisplay = selectRole.querySelector(".custom-select-display");
-      const selectList = selectRole.querySelector(".custom-select-list");
-      const selectText = document.getElementById("selectRoleText");
-      const realSelect = document.getElementById("role");
+    /* ----------------------------------
+      EDITAR / EXCLUIR / TOGGLE LOTE
+    ---------------------------------- */
 
-      selectDisplay.addEventListener("click", () => {
-        const visible = selectList.style.display === "block";
-        selectList.style.display = visible ? "none" : "block";
-      });
+    usersTableBody.addEventListener("click", async (e) => {
+      const btn = e.target;
 
-      selectList.querySelectorAll(".custom-select-item").forEach((item) => {
-        item.addEventListener("click", () => {
-          const val = item.dataset.value;
+      // EDITAR
+      if (btn.classList.contains("edit-user")) {
+        const id = btn.dataset.id;
+        const u = usuarios.find((x) => String(x.id) === String(id));
+        if (!u) return;
 
-          realSelect.value = val;
-          selectText.textContent = item.textContent;
+        userIdInput.value = u.id;
+        nomeInput.value = u.nome;
+        emailInput.value = u.email;
+        senhaInput.value = "";
+        roleSelect.value = u.role;
+        ativoCheckbox.checked = !!u.ativo;
+        podeLoteCheckbox.checked = !!u.pode_lote;
 
-          selectList.style.display = "none";
-        });
-      });
+        salvarBtn.textContent = "Atualizar";
+        setFormMessage("Editando usuário...");
+      }
 
-      // Fecha select ao clicar fora
-      document.addEventListener("click", (e) => {
-        if (!selectRole.contains(e.target)) {
-          selectList.style.display = "none";
+      // EXCLUIR
+      if (btn.classList.contains("delete-user")) {
+        const id = btn.dataset.id;
+
+        if (!confirm("Excluir este usuário?")) return;
+
+        try {
+          const resp = await fetch(
+            `${BACKEND_BASE_URL}/admin/usuarios/${id}`,
+            {
+              method: "DELETE",
+              headers: { Authorization: "Bearer " + getToken() },
+            }
+          );
+
+          const data = await resp.json().catch(() => ({}));
+
+          if (!resp.ok) {
+            console.error("Erro excluir:", data);
+            setFormMessage(data.error || "Erro ao excluir usuário.", true);
+          } else {
+            setFormMessage("Usuário excluído.");
+            await carregarUsuarios();
+          }
+        } catch (err) {
+          console.error(err);
+          setFormMessage("Erro ao excluir usuário.", true);
         }
-      });
+      }
+    });
 
-      /* ----------------------------------
-        INICIALIZAR
-      ---------------------------------- */
+    // Toggle lote direto na tabela
+    usersTableBody.addEventListener("change", async (e) => {
+      const input = e.target;
+      if (!input.classList.contains("toggle-lote")) return;
 
-      document.addEventListener("DOMContentLoaded", () => {
-        carregarUsuarios();
+      const id = input.dataset.id;
+      const novoValor = !!input.checked;
+
+      try {
+        const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + getToken(),
+          },
+          body: JSON.stringify({ pode_lote: novoValor }),
+        });
+
+        const data = await resp.json().catch(() => ({}));
+
+        if (!resp.ok) {
+          console.error("Erro atualizar toggle:", data);
+          setFormMessage(data.error || "Erro ao atualizar permissão.", true);
+          await carregarUsuarios();
+        } else {
+          await carregarUsuarios();
+        }
+      } catch (err) {
+        console.error(err);
+        setFormMessage("Erro ao atualizar permissão de lote.", true);
+        await carregarUsuarios();
+      }
+    });
+
+    // SELECT CUSTOMIZADO
+    const selectRole = document.getElementById("selectRole");
+    const selectDisplay = selectRole.querySelector(".custom-select-display");
+    const selectList = selectRole.querySelector(".custom-select-list");
+    const selectText = document.getElementById("selectRoleText");
+    const realSelect = document.getElementById("role");
+
+    selectDisplay.addEventListener("click", () => {
+      const visible = selectList.style.display === "block";
+      selectList.style.display = visible ? "none" : "block";
+    });
+
+    selectList.querySelectorAll(".custom-select-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const val = item.dataset.value;
+
+        realSelect.value = val;
+        selectText.textContent = item.textContent;
+
+        selectList.style.display = "none";
       });
-    </script>
-  </body>
+    });
+
+    // Fecha select ao clicar fora
+    document.addEventListener("click", (e) => {
+      if (!selectRole.contains(e.target)) {
+        selectList.style.display = "none";
+      }
+    });
+
+    /* ----------------------------------
+      INICIALIZAR
+    ---------------------------------- */
+
+    document.addEventListener("DOMContentLoaded", () => {
+      carregarUsuarios();
+    });
+  </script>
+</body>
+
 </html>

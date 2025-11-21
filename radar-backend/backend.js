@@ -5,6 +5,7 @@ const cors = require("cors");
 const fetch = require("node-fetch"); // versão 2 (CommonJS)
 const { Pool } = require("pg");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 
 const app = express();
 
@@ -14,8 +15,6 @@ const INFOSIMPLES_TOKEN = process.env.API_TOKEN;
 const URL_RADAR = process.env.URL_RADAR;
 const CACHE_DIAS = Number(process.env.CACHE_DIAS || 90);
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-mude-isso";
-
-const path = require("path");
 
 // Rota raiz: sempre ir para a tela de login
 app.get("/", (req, res) => {
@@ -27,7 +26,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ========== POSTGRES (Render) ==========
 const isRender = !!process.env.RENDER; // o Render seta isso automaticamente
-
 console.log("Iniciando Pool Postgres. RENDER =", isRender);
 
 const pool = new Pool({
@@ -35,7 +33,7 @@ const pool = new Pool({
   ssl: isRender ? { rejectUnauthorized: false } : false,
 });
 
-// cria tabelas se não existir + coluna extra do painel ADM
+// cria tabelas se não existir + colunas extras do painel ADM
 async function initDb() {
   const sql = `
     CREATE TABLE IF NOT EXISTS consultas_radar (
@@ -54,7 +52,7 @@ async function initDb() {
       regime_tributario TEXT,
       data_opcao_simples TEXT,
       capital_social    TEXT,
-      exportado_por     TEXT,
+      exportado_por       TEXT,
       consultado_por_id   BIGINT,
       consultado_por_nome TEXT,
       atualizado_em       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -86,6 +84,68 @@ async function initDb() {
 
     ALTER TABLE usuarios
       ADD COLUMN IF NOT EXISTS pode_lote BOOLEAN NOT NULL DEFAULT TRUE;
+
+    -- novas colunas de permissão
+    ALTER TABLE usuarios
+      ADD COLUMN IF NOT EXISTS can_radar BOOLEAN NOT NULL DEFAULT TRUE;
+
+    ALTER TABLE usuarios
+      ADD COLUMN IF NOT EXISTS can_chamados BOOLEAN NOT NULL DEFAULT TRUE;
+
+    ALTER TABLE usuarios
+      ADD COLUMN IF NOT EXISTS can_admin BOOLEAN NOT NULL DEFAULT FALSE;
+
+    ALTER TABLE usuarios
+      ADD COLUMN IF NOT EXISTS can_master_ti BOOLEAN NOT NULL DEFAULT FALSE;
+
+      -- ================= CHAMADOS TI =================
+    CREATE TABLE IF NOT EXISTS chamados_ti (
+      id                BIGSERIAL PRIMARY KEY,
+      titulo            TEXT         NOT NULL,
+      descricao         TEXT,
+      tipo              VARCHAR(30),      -- Incident, Service Request...
+      categoria         VARCHAR(50),      -- Hardware, Software, Rede...
+      urgencia          VARCHAR(20),      -- Low, Medium, High, Critical
+      status            VARCHAR(40) NOT NULL DEFAULT 'new',
+      solicitante_id    BIGINT      NOT NULL REFERENCES usuarios(id),
+      solicitante_nome  TEXT        NOT NULL,
+      responsavel_id    BIGINT,
+      responsavel_nome  TEXT,
+      criado_em         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      atualizado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      fechado_em        TIMESTAMPTZ
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_chamados_ti_status
+      ON chamados_ti (status);
+
+    CREATE INDEX IF NOT EXISTS idx_chamados_ti_solicitante
+      ON chamados_ti (solicitante_id);
+
+    CREATE TABLE IF NOT EXISTS chamados_ti_atividade (
+      id                BIGSERIAL PRIMARY KEY,
+      chamado_id        BIGINT      NOT NULL REFERENCES chamados_ti(id) ON DELETE CASCADE,
+      tipo              VARCHAR(30) NOT NULL,  -- create, status_change, comment...
+      descricao         TEXT        NOT NULL,
+      criado_por_id     BIGINT      NOT NULL REFERENCES usuarios(id),
+      criado_por_nome   TEXT        NOT NULL,
+      criado_em         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_chamados_ti_atividade_chamado
+      ON chamados_ti_atividade (chamado_id);
+
+          CREATE TABLE IF NOT EXISTS ti_reservas (
+      id          BIGSERIAL PRIMARY KEY,
+      usuario_id  BIGINT      NOT NULL REFERENCES usuarios(id),
+      data        DATE        NOT NULL,
+      periodo     VARCHAR(20) NOT NULL, -- manha, tarde, dia_todo
+      motivo      TEXT,
+      criado_em   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_ti_reservas_usuario_data
+      ON ti_reservas (usuario_id, data);
 
     -- garante colunas novas mesmo em bancos antigos
     ALTER TABLE consultas_radar
@@ -141,8 +201,12 @@ async function seedAdminUser() {
       const role = "admin";
 
       const sql = `
-        INSERT INTO usuarios (nome, email, senha_hash, role, ativo, pode_lote)
-        VALUES ($1, $2, $3, $4, TRUE, TRUE)
+        INSERT INTO usuarios
+          (nome, email, senha_hash, role, ativo, pode_lote,
+           can_radar, can_chamados, can_admin, can_master_ti)
+        VALUES
+          ($1,   $2,    $3,         $4,  TRUE,  TRUE,
+           TRUE, TRUE,  TRUE,       FALSE)
         ON CONFLICT (email) DO NOTHING;
       `;
 
@@ -396,6 +460,8 @@ function authMiddleware(req, res, next) {
       nome: payload.nome,
       email: payload.email,
       role: payload.role,
+      pode_lote: payload.pode_lote,
+      permissions: payload.permissions || {},
     };
     next();
   } catch (err) {
@@ -413,6 +479,49 @@ function authMiddlewareAdmin(req, res, next) {
     return res.status(403).json({ error: "Acesso restrito ao administrador" });
   }
   next();
+}
+
+// Middleware: requer permissão para módulo de chamados (self-service)
+function requireChamadosPermission(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: "Não autenticado" });
+  }
+
+  const perms = req.user.permissions || {};
+
+  if (
+    perms.chamados || // can_chamados = true
+    perms.admin || // can_admin = true
+    perms.masterTi || // can_master_ti = true
+    req.user.role === "admin"
+  ) {
+    return next();
+  }
+
+  return res
+    .status(403)
+    .json({ error: "Acesso restrito ao módulo de chamados de TI." });
+}
+
+// Middleware: requer permissão para painel Master TI
+function requireMasterTiPermission(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: "Não autenticado" });
+  }
+
+  const perms = req.user.permissions || {};
+
+  if (
+    perms.masterTi || // can_master_ti = true
+    perms.admin || // can_admin = true
+    req.user.role === "admin"
+  ) {
+    return next();
+  }
+
+  return res
+    .status(403)
+    .json({ error: "Acesso restrito ao Painel Master TI." });
 }
 
 // ========== FUNÇÕES DE API (ReceitaWS / Radar) ==========
@@ -577,7 +686,13 @@ app.post("/auth/login", async (req, res) => {
       return res.status(400).json({ error: "Informe email e senha." });
     }
 
-    const sql = `SELECT * FROM usuarios WHERE email = $1 AND ativo = TRUE`;
+    const sql = `
+      SELECT
+        id, nome, email, senha_hash, role, ativo, pode_lote,
+        can_radar, can_chamados, can_admin, can_master_ti
+      FROM usuarios
+      WHERE email = $1 AND ativo = TRUE
+    `;
     const { rows } = await pool.query(sql, [email]);
     const user = rows[0];
 
@@ -595,12 +710,21 @@ app.post("/auth/login", async (req, res) => {
 
     console.log(">>> LOGIN OK para:", user.email);
 
+    const permissions = {
+      radar: !!user.can_radar,
+      chamados: !!user.can_chamados,
+      admin: !!user.can_admin,
+      masterTi: !!user.can_master_ti,
+    };
+
     const token = jwt.sign(
       {
         id: user.id,
         nome: user.nome,
         email: user.email,
         role: user.role,
+        pode_lote: user.pode_lote,
+        permissions, // vai junto no payload do JWT
       },
       JWT_SECRET,
       { expiresIn: "60h" }
@@ -613,6 +737,9 @@ app.post("/auth/login", async (req, res) => {
         nome: user.nome,
         email: user.email,
         role: user.role,
+        ativo: user.ativo,
+        pode_lote: user.pode_lote,
+        permissions,
       },
     });
   } catch (err) {
@@ -636,7 +763,10 @@ app.get(
   async (req, res) => {
     try {
       const sql = `
-        SELECT id, nome, email, role, ativo, pode_lote, criado_em
+        SELECT
+          id, nome, email, role, ativo, pode_lote,
+          can_radar, can_chamados, can_admin, can_master_ti,
+          criado_em
         FROM usuarios
         ORDER BY id ASC;
       `;
@@ -668,6 +798,14 @@ app.post(
         status,
         pode_lote,
         podeLote,
+        can_radar,
+        canRadar,
+        can_chamados,
+        canChamados,
+        can_admin,
+        canAdmin,
+        can_master_ti,
+        canMasterTi,
       } = req.body || {};
 
       if (!nome || !email || !senha) {
@@ -699,10 +837,41 @@ app.post(
           ? podeLoteRaw
           : String(podeLoteRaw).toLowerCase() !== "false";
 
+      const canRadarRaw = can_radar ?? canRadar ?? true;
+      const canRadarFinal =
+        typeof canRadarRaw === "boolean"
+          ? canRadarRaw
+          : String(canRadarRaw).toLowerCase() !== "false";
+
+      const canChamadosRaw = can_chamados ?? canChamados ?? true;
+      const canChamadosFinal =
+        typeof canChamadosRaw === "boolean"
+          ? canChamadosRaw
+          : String(canChamadosRaw).toLowerCase() !== "false";
+
+      const canAdminRaw = can_admin ?? canAdmin ?? false;
+      const canAdminFinal =
+        typeof canAdminRaw === "boolean"
+          ? canAdminRaw
+          : String(canAdminRaw).toLowerCase() !== "false";
+
+      const canMasterTiRaw = can_master_ti ?? canMasterTi ?? false;
+      const canMasterTiFinal =
+        typeof canMasterTiRaw === "boolean"
+          ? canMasterTiRaw
+          : String(canMasterTiRaw).toLowerCase() !== "false";
+
       const sql = `
-        INSERT INTO usuarios (nome, email, senha_hash, role, ativo, pode_lote)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, nome, email, role, ativo, pode_lote, criado_em;
+        INSERT INTO usuarios
+          (nome, email, senha_hash, role, ativo, pode_lote,
+           can_radar, can_chamados, can_admin, can_master_ti)
+        VALUES
+          ($1,   $2,    $3,         $4,   $5,    $6,
+           $7,       $8,           $9,       $10)
+        RETURNING
+          id, nome, email, role, ativo, pode_lote,
+          can_radar, can_chamados, can_admin, can_master_ti,
+          criado_em;
       `;
 
       const { rows } = await pool.query(sql, [
@@ -712,6 +881,10 @@ app.post(
         roleFinal,
         ativoFinal,
         podeLoteFinal,
+        canRadarFinal,
+        canChamadosFinal,
+        canAdminFinal,
+        canMasterTiFinal,
       ]);
 
       console.log("Usuário criado com sucesso:", rows[0]);
@@ -752,6 +925,14 @@ app.put(
         status,
         pode_lote,
         podeLote,
+        can_radar,
+        canRadar,
+        can_chamados,
+        canChamados,
+        can_admin,
+        canAdmin,
+        can_master_ti,
+        canMasterTi,
       } = req.body || {};
 
       const campos = [];
@@ -801,6 +982,42 @@ app.put(
         campos.push(`pode_lote = $${idx++}`);
         valores.push(podeLoteFinal);
       }
+      if (can_radar !== undefined || canRadar !== undefined) {
+        const raw = can_radar ?? canRadar;
+        const val =
+          typeof raw === "boolean"
+            ? raw
+            : String(raw).toLowerCase() !== "false";
+        campos.push(`can_radar = $${idx++}`);
+        valores.push(val);
+      }
+      if (can_chamados !== undefined || canChamados !== undefined) {
+        const raw = can_chamados ?? canChamados;
+        const val =
+          typeof raw === "boolean"
+            ? raw
+            : String(raw).toLowerCase() !== "false";
+        campos.push(`can_chamados = $${idx++}`);
+        valores.push(val);
+      }
+      if (can_admin !== undefined || canAdmin !== undefined) {
+        const raw = can_admin ?? canAdmin;
+        const val =
+          typeof raw === "boolean"
+            ? raw
+            : String(raw).toLowerCase() !== "false";
+        campos.push(`can_admin = $${idx++}`);
+        valores.push(val);
+      }
+      if (can_master_ti !== undefined || canMasterTi !== undefined) {
+        const raw = can_master_ti ?? canMasterTi;
+        const val =
+          typeof raw === "boolean"
+            ? raw
+            : String(raw).toLowerCase() !== "false";
+        campos.push(`can_master_ti = $${idx++}`);
+        valores.push(val);
+      }
 
       if (!campos.length) {
         return res
@@ -813,7 +1030,10 @@ app.put(
         UPDATE usuarios
         SET ${campos.join(", ")}
         WHERE id = $${idx}
-        RETURNING id, nome, email, role, ativo, pode_lote, criado_em;
+        RETURNING
+          id, nome, email, role, ativo, pode_lote,
+          can_radar, can_chamados, can_admin, can_master_ti,
+          criado_em;
       `;
 
       const { rows } = await pool.query(sql, valores);
@@ -852,7 +1072,10 @@ app.delete(
         UPDATE usuarios
         SET ativo = FALSE
         WHERE id = $1
-        RETURNING id, nome, email, role, ativo, pode_lote, criado_em;
+        RETURNING
+          id, nome, email, role, ativo, pode_lote,
+          can_radar, can_chamados, can_admin, can_master_ti,
+          criado_em;
       `;
 
       const { rows } = await pool.query(sql, [id]);
@@ -984,7 +1207,7 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
       radarFalhou = true;
     }
 
-    // Se o RADAR respondeu mas veio totalmente vazio → marcar como DADOS INDISPONÍVEISff
+    // Se o RADAR respondeu mas veio totalmente vazio → marcar como DADOS INDISPONÍVEIS
     if (radar && !radarFalhou) {
       const semCamposRadar =
         !radar.contribuinte &&
@@ -1317,6 +1540,452 @@ app.get(
     } catch (err) {
       console.error("Erro /corrigir-erros:", err);
       return res.status(500).json({ error: "Erro ao corrigir registros." });
+    }
+  }
+);
+
+// ======================================================
+//                 CHAMADOS TI – SELF SERVICE
+// ======================================================
+
+// ================== RESERVAS DE DIA (SELF-SERVICE) ==================
+
+app.get(
+  "/ti/reservas",
+  authMiddleware,
+  requireChamadosPermission,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      const sql = `
+        SELECT id, data, periodo, motivo, criado_em
+        FROM ti_reservas
+        WHERE usuario_id = $1
+        ORDER BY data DESC, criado_em DESC;
+      `;
+
+      const { rows } = await pool.query(sql, [userId]);
+
+      const lista = rows.map((r) => ({
+        id: r.id,
+        data: r.data, // YYYY-MM-DD
+        periodo: r.periodo, // manha, tarde, dia_todo
+        motivo: r.motivo || "",
+        criado_em: r.criado_em,
+      }));
+
+      return res.json(lista);
+    } catch (err) {
+      console.error("Erro GET /ti/reservas:", err);
+      return res.status(500).json({ error: "Erro ao listar reservas." });
+    }
+  }
+);
+
+// Criar chamado TI (Self-Service)
+app.post(
+  "/ti/chamados",
+  authMiddleware,
+  requireChamadosPermission,
+  async (req, res) => {
+    try {
+      const { titulo, descricao, tipo, categoria, urgencia } = req.body || {};
+
+      if (!titulo || !titulo.trim()) {
+        return res
+          .status(400)
+          .json({ error: "Título do chamado é obrigatório." });
+      }
+
+      const userId = req.user.id;
+      const userNome = req.user.nome || "Usuário";
+
+      const tipoFinal = (tipo || "incident").toLowerCase();
+      const categoriaFinal = categoria || "-----";
+      const urgenciaFinal = (urgencia || "medium").toLowerCase();
+
+      const sql = `
+        INSERT INTO chamados_ti (
+          titulo,
+          descricao,
+          tipo,
+          categoria,
+          urgencia,
+          status,
+          solicitante_id,
+          solicitante_nome
+        )
+        VALUES ($1, $2, $3, $4, $5, 'new', $6, $7)
+        RETURNING
+          id,
+          titulo,
+          descricao,
+          tipo,
+          categoria,
+          urgencia,
+          status,
+          solicitante_id,
+          solicitante_nome,
+          criado_em,
+          atualizado_em,
+          fechado_em;
+      `;
+
+      const { rows } = await pool.query(sql, [
+        titulo.trim(),
+        descricao || "",
+        tipoFinal,
+        categoriaFinal,
+        urgenciaFinal,
+        userId,
+        userNome,
+      ]);
+
+      const chamado = rows[0];
+
+      // registra atividade de criação
+      await pool.query(
+        `
+        INSERT INTO chamados_ti_atividade
+          (chamado_id, tipo, descricao, criado_por_id, criado_por_nome)
+        VALUES
+          ($1, 'create', $2, $3, $4);
+      `,
+        [chamado.id, "Chamado criado pelo usuário.", userId, userNome]
+      );
+
+      return res.status(201).json({
+        ...chamado,
+        numero: `#${chamado.id}`,
+      });
+    } catch (err) {
+      console.error("Erro POST /ti/chamados:", err);
+      return res.status(500).json({ error: "Erro ao criar chamado de TI." });
+    }
+  }
+);
+
+// Listar chamados do próprio usuário
+app.get(
+  "/ti/chamados",
+  authMiddleware,
+  requireChamadosPermission,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      const sql = `
+        SELECT
+          id,
+          titulo,
+          descricao,
+          tipo,
+          categoria,
+          urgencia,
+          status,
+          solicitante_nome,
+          criado_em,
+          atualizado_em,
+          fechado_em
+        FROM chamados_ti
+        WHERE solicitante_id = $1
+        ORDER BY criado_em DESC;
+      `;
+
+      const { rows } = await pool.query(sql, [userId]);
+
+      const lista = rows.map((r) => ({
+        id: r.id,
+        numero: `#${r.id}`,
+        titulo: r.titulo,
+        descricao: r.descricao,
+        tipo: r.tipo,
+        categoria: r.categoria,
+        urgencia: r.urgencia,
+        status: r.status,
+        solicitante_nome: r.solicitante_nome,
+        criado_em: r.criado_em,
+        atualizado_em: r.atualizado_em,
+        fechado_em: r.fechado_em,
+      }));
+
+      return res.json(lista);
+    } catch (err) {
+      console.error("Erro GET /ti/chamados:", err);
+      return res.status(500).json({ error: "Erro ao listar chamados." });
+    }
+  }
+);
+
+// Resumo de status para o usuário (cards da tela Self-Service)
+app.get(
+  "/ti/chamados/resumo",
+  authMiddleware,
+  requireChamadosPermission,
+  async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      const sql = `
+        SELECT status, COUNT(*) AS total
+        FROM chamados_ti
+        WHERE solicitante_id = $1
+        GROUP BY status;
+      `;
+
+      const { rows } = await pool.query(sql, [userId]);
+
+      const base = {
+        new: 0,
+        processing_assigned: 0,
+        processing_planned: 0,
+        pending: 0,
+        solved: 0,
+        closed: 0,
+        deleted: 0,
+      };
+
+      rows.forEach((r) => {
+        const status = r.status;
+        if (base.hasOwnProperty(status)) {
+          base[status] = Number(r.total);
+        }
+      });
+
+      return res.json(base);
+    } catch (err) {
+      console.error("Erro GET /ti/chamados/resumo:", err);
+      return res.status(500).json({ error: "Erro ao obter resumo." });
+    }
+  }
+);
+
+// ======================================================
+//                     MASTER TI – PAINEL
+// ======================================================
+
+// Métricas do dashboard (cards grandes)
+app.get(
+  "/ti/master/resumo",
+  authMiddleware,
+  requireMasterTiPermission,
+  async (req, res) => {
+    try {
+      const sql = `
+        SELECT status, COUNT(*) AS total
+        FROM chamados_ti
+        GROUP BY status;
+      `;
+      const { rows } = await pool.query(sql);
+
+      let abertos = 0;
+      let emAndamento = 0;
+      let pendentesAprovacao = 0;
+
+      rows.forEach((r) => {
+        const s = r.status;
+        const total = Number(r.total);
+        if (s === "new") abertos += total;
+        if (s === "processing_assigned" || s === "processing_planned") {
+          emAndamento += total;
+        }
+        if (s === "pending") pendentesAprovacao += total;
+      });
+
+      const sqlHoje = `
+        SELECT COUNT(*) AS total
+        FROM chamados_ti
+        WHERE status = 'solved'
+          AND DATE(fechado_em) = CURRENT_DATE;
+      `;
+      const { rows: rowsHoje } = await pool.query(sqlHoje);
+      const concluidosHoje = Number(rowsHoje[0]?.total || 0);
+
+      return res.json({
+        abertos,
+        emAndamento,
+        pendentesAprovacao,
+        concluidosHoje,
+      });
+    } catch (err) {
+      console.error("Erro GET /ti/master/resumo:", err);
+      return res.status(500).json({ error: "Erro ao obter métricas." });
+    }
+  }
+);
+
+// Tabela de chamados recentes (lado esquerdo do Master)
+app.get(
+  "/ti/master/chamados",
+  authMiddleware,
+  requireMasterTiPermission,
+  async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(req.query.limit || "20", 10), 100);
+
+      const sql = `
+        SELECT
+          id,
+          titulo,
+          solicitante_nome,
+          categoria,
+          status,
+          criado_em
+        FROM chamados_ti
+        ORDER BY criado_em DESC
+        LIMIT $1;
+      `;
+
+      const { rows } = await pool.query(sql, [limit]);
+
+      const lista = rows.map((r) => ({
+        id: r.id,
+        numero: `#${r.id}`,
+        titulo: r.titulo,
+        solicitante_nome: r.solicitante_nome,
+        categoria: r.categoria,
+        status: r.status,
+        criado_em: r.criado_em,
+      }));
+
+      return res.json(lista);
+    } catch (err) {
+      console.error("Erro GET /ti/master/chamados:", err);
+      return res
+        .status(500)
+        .json({ error: "Erro ao listar chamados recentes (Master)." });
+    }
+  }
+);
+
+// Atividade recente (timeline lado direito do Master)
+app.get(
+  "/ti/master/atividade",
+  authMiddleware,
+  requireMasterTiPermission,
+  async (req, res) => {
+    try {
+      const sql = `
+        SELECT
+          a.id,
+          a.chamado_id,
+          c.titulo AS chamado_titulo,
+          a.tipo,
+          a.descricao,
+          a.criado_por_nome,
+          a.criado_em
+        FROM chamados_ti_atividade a
+        LEFT JOIN chamados_ti c ON c.id = a.chamado_id
+        ORDER BY a.criado_em DESC
+        LIMIT 10;
+      `;
+
+      const { rows } = await pool.query(sql);
+
+      const lista = rows.map((r) => ({
+        id: r.id,
+        chamadoId: r.chamado_id,
+        numero: r.chamado_id ? `#${r.chamado_id}` : null,
+        tituloChamado: r.chamado_titulo || "",
+        tipo: r.tipo,
+        descricao: r.descricao,
+        criadoPorNome: r.criado_por_nome,
+        criadoEm: r.criado_em,
+      }));
+
+      return res.json(lista);
+    } catch (err) {
+      console.error("Erro GET /ti/master/atividade:", err);
+      return res
+        .status(500)
+        .json({ error: "Erro ao listar atividade recente." });
+    }
+  }
+);
+
+// Alterar status de um chamado (Master TI)
+app.put(
+  "/ti/master/chamados/:id/status",
+  authMiddleware,
+  requireMasterTiPermission,
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (!id) {
+        return res.status(400).json({ error: "ID de chamado inválido." });
+      }
+
+      const { status } = req.body || {};
+      const allowed = [
+        "new",
+        "processing_assigned",
+        "processing_planned",
+        "pending",
+        "solved",
+        "closed",
+        "deleted",
+      ];
+
+      if (!allowed.includes(status)) {
+        return res.status(400).json({ error: "Status inválido." });
+      }
+
+      const userId = req.user.id;
+      const userNome = req.user.nome || "Master TI";
+
+      const sql = `
+        UPDATE chamados_ti
+        SET
+          status = $1,
+          responsavel_id = $2,
+          responsavel_nome = $3,
+          atualizado_em = NOW(),
+          fechado_em = CASE
+            WHEN $1 IN ('solved', 'closed') THEN NOW()
+            ELSE fechado_em
+          END
+        WHERE id = $4
+        RETURNING
+          id,
+          titulo,
+          solicitante_nome,
+          categoria,
+          status,
+          criado_em,
+          atualizado_em,
+          fechado_em;
+      `;
+
+      const { rows } = await pool.query(sql, [status, userId, userNome, id]);
+
+      const chamado = rows[0];
+      if (!chamado) {
+        return res.status(404).json({ error: "Chamado não encontrado." });
+      }
+
+      await pool.query(
+        `
+        INSERT INTO chamados_ti_atividade
+          (chamado_id, tipo, descricao, criado_por_id, criado_por_nome)
+        VALUES
+          ($1, 'status_change', $2, $3, $4);
+      `,
+        [
+          id,
+          `Status alterado para "${status}" por ${userNome}`,
+          userId,
+          userNome,
+        ]
+      );
+
+      return res.json({
+        ...chamado,
+        numero: `#${chamado.id}`,
+      });
+    } catch (err) {
+      console.error("Erro PUT /ti/master/chamados/:id/status:", err);
+      return res.status(500).json({ error: "Erro ao alterar status." });
     }
   }
 );

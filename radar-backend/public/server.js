@@ -16,20 +16,25 @@ function getToken() {
   );
 }
 
-function getCurrentUserName() {
+function getCurrentUser() {
   const token = getToken();
-  if (!token) return "";
+  if (!token) return null;
 
   try {
     const [, payloadBase64] = token.split(".");
     const normalized = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
     const json = atob(normalized);
     const payload = JSON.parse(json);
-    return payload.nome || "";
+    return payload; // { id, nome, email, role, pode_lote, permissions: {...} }
   } catch (err) {
-    console.error("Não foi possível ler o nome do usuário do token:", err);
-    return "";
+    console.error("Não foi possível decodificar o token:", err);
+    return null;
   }
+}
+
+function getCurrentUserName() {
+  const user = getCurrentUser();
+  return user?.nome || "";
 }
 
 // ---------- ELEMENTOS BÁSICOS ----------
@@ -1060,6 +1065,21 @@ if (selectAllCheckbox) {
 
 // ---------- AO CARREGAR A PÁGINA ----------
 window.addEventListener("DOMContentLoaded", () => {
+  const token = getToken();
+  if (!token) {
+    alert("Sessão expirada. Faça login novamente.");
+    window.location.href = "login.html";
+    return;
+  }
+
+  const user = getCurrentUser();
+  if (user && user.pode_lote === false) {
+    // esconde tudo que é somente de lote
+    document
+      .querySelectorAll(".somente-lote")
+      .forEach((el) => (el.style.display = "none"));
+  }
+
   registros = [];
   renderizarTodos();
   atualizarProgressoLote(0, 0);

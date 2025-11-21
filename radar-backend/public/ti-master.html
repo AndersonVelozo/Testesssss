@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>Painel Master TI - Alpha</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="master-page">
+    <div class="master-layout">
+      <!-- SIDEBAR -->
+      <aside class="master-sidebar">
+        <div class="master-sidebar-header">
+          <div class="master-brand">
+            <span class="master-brand-main">Alpha</span>
+            <span class="master-brand-sub">TI</span>
+          </div>
+        </div>
+
+        <nav class="master-nav">
+          <a href="#" class="master-nav-item active">Dashboard</a>
+          <a href="#" class="master-nav-item">Chamados</a>
+          <a href="#" class="master-nav-item">Relatórios</a>
+          <a href="#" class="master-nav-item">Configurações</a>
+        </nav>
+
+        <button
+          class="master-back-portal"
+          onclick="window.location.href='home.html'"
+        >
+          ← Voltar ao Portal
+        </button>
+
+        <div class="master-sidebar-footer">
+          <div class="master-user-mini">
+            <div class="master-avatar-mini">TI</div>
+            <div class="master-user-info">
+              <span class="master-user-name" id="masterUserName">
+                Master TI
+              </span>
+              <span class="master-user-role" id="masterUserRole">
+                Administrador global
+              </span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CONTEÚDO PRINCIPAL -->
+      <main class="master-main">
+        <!-- HEADER -->
+        <header class="master-header">
+          <div>
+            <h1>Painel Master TI</h1>
+            <p class="master-header-sub">
+              Visão geral dos chamados internos de TI e atividades recentes.
+            </p>
+          </div>
+
+          <div class="master-header-actions">
+            <select class="master-select">
+              <option>Últimos 7 dias</option>
+              <option>Últimos 30 dias</option>
+              <option>Este mês</option>
+              <option>Últimos 90 dias</option>
+            </select>
+            <button class="btn-primary master-header-btn">
+              + Novo chamado
+            </button>
+            <button
+              class="btn-secondary master-header-btn"
+              id="btnGoAdminUsers"
+            >
+              Gerenciar usuários
+            </button>
+          </div>
+        </header>
+
+        <!-- MÉTRICAS -->
+        <section class="master-metrics">
+          <article class="master-metric-card">
+            <span class="master-metric-label">Chamados abertos</span>
+            <span class="master-metric-value" id="metricOpen">18</span>
+            <span class="master-metric-sub">Em análise pela TI</span>
+          </article>
+
+          <article class="master-metric-card">
+            <span class="master-metric-label">Em andamento</span>
+            <span class="master-metric-value" id="metricInProgress">9</span>
+            <span class="master-metric-sub">Com técnico designado</span>
+          </article>
+
+          <article class="master-metric-card">
+            <span class="master-metric-label">Pendentes de aprovação</span>
+            <span class="master-metric-value" id="metricPendingApproval"
+              >3</span
+            >
+            <span class="master-metric-sub">Aguardando gestor</span>
+          </article>
+
+          <article class="master-metric-card">
+            <span class="master-metric-label">Concluídos hoje</span>
+            <span class="master-metric-value" id="metricDoneToday">12</span>
+            <span class="master-metric-sub">Resolvidos com sucesso</span>
+          </article>
+        </section>
+
+        <!-- GRID PRINCIPAL: TABELA + ATIVIDADE -->
+        <section class="master-main-grid">
+          <!-- TABELA -->
+          <div class="master-panel">
+            <div class="master-panel-header">
+              <h2>Chamados recentes</h2>
+              <div class="master-panel-actions">
+                <input
+                  type="text"
+                  class="master-input"
+                  placeholder="Buscar por número ou título..."
+                  id="searchTickets"
+                />
+              </div>
+            </div>
+
+            <div class="master-table-wrapper">
+              <table class="master-table" id="ticketsTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Título</th>
+                    <th>Solicitante</th>
+                    <th>Categoria</th>
+                    <th>Status</th>
+                    <th>Aberto em</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Linhas estáticas por enquanto;
+                       serão trocadas por dados reais depois -->
+                  <tr>
+                    <td>#1023</td>
+                    <td>Erro ao acessar sistema RADAR</td>
+                    <td>João Lima</td>
+                    <td>Sistema</td>
+                    <td>
+                      <span class="master-badge master-badge-open">Aberto</span>
+                    </td>
+                    <td>21/11/2025 09:13</td>
+                  </tr>
+                  <tr>
+                    <td>#1022</td>
+                    <td>Troca de notebook</td>
+                    <td>Maria Costa</td>
+                    <td>Equipamento</td>
+                    <td>
+                      <span class="master-badge master-badge-progress"
+                        >Em andamento</span
+                      >
+                    </td>
+                    <td>21/11/2025 08:47</td>
+                  </tr>
+                  <tr>
+                    <td>#1021</td>
+                    <td>Falha na VPN</td>
+                    <td>Rafael Sousa</td>
+                    <td>Rede</td>
+                    <td>
+                      <span class="master-badge master-badge-wait"
+                        >Pendente aprovação</span
+                      >
+                    </td>
+                    <td>20/11/2025 17:05</td>
+                  </tr>
+                  <tr>
+                    <td>#1017</td>
+                    <td>Reset de senha e-mail</td>
+                    <td>Ana Pereira</td>
+                    <td>Acesso</td>
+                    <td>
+                      <span class="master-badge master-badge-done"
+                        >Concluído</span
+                      >
+                    </td>
+                    <td>20/11/2025 15:32</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- LADO DIREITO - ATIVIDADES -->
+          <div class="master-panel master-side-panel">
+            <div class="master-panel-header">
+              <h2>Atividade recente</h2>
+            </div>
+
+            <ul class="master-timeline" id="masterTimeline">
+              <li>
+                <span class="master-timeline-dot"></span>
+                <div class="master-timeline-content">
+                  <strong>#1022</strong> movido para
+                  <span class="master-badge master-badge-progress"
+                    >Em andamento</span
+                  >
+                  <p class="master-timeline-meta">
+                    Hoje às 10:12 • Técnico: Carlos
+                  </p>
+                </div>
+              </li>
+              <li>
+                <span class="master-timeline-dot"></span>
+                <div class="master-timeline-content">
+                  <strong>#1017</strong> marcado como
+                  <span class="master-badge master-badge-done">Concluído</span>
+                  <p class="master-timeline-meta">
+                    Ontem às 16:40 • Validação do usuário
+                  </p>
+                </div>
+              </li>
+              <li>
+                <span class="master-timeline-dot"></span>
+                <div class="master-timeline-content">
+                  <strong>#1012</strong> aguardando aprovação do gestor
+                  <p class="master-timeline-meta">
+                    Ontem às 11:03 • Categoria: Aquisição
+                  </p>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="ti-master.js"></script>
+  </body>
+</html>

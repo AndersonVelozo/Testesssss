@@ -126,7 +126,7 @@
 
       const BASE = isLocal
         ? "http://localhost:3000"
-        : "https://radar-backend-omjv.onrender.com";
+        : "https://testesssss-production.up.railway.app";
 
       const listaDatasEl = document.getElementById("listaDatas");
       const btnExportar = document.getElementById("btnExportar");
@@ -134,8 +134,23 @@
       const msg = document.getElementById("msg");
 
       function getToken() {
-        return localStorage.getItem("authToken") || "";
+        return (
+          localStorage.getItem("radar_token") ||
+          localStorage.getItem("token") ||
+          localStorage.getItem("authToken") ||
+          ""
+        );
       }
+
+      function ensureAuthenticated() {
+        const token = getToken();
+        if (!token) {
+          alert("Sessão expirada. Faça login novamente.");
+          window.location.href = "login.html";
+        }
+      }
+
+      ensureAuthenticated();
 
       // ===============================
       // 1. Carregar datas disponíveis
@@ -163,13 +178,15 @@
             const div = document.createElement("div");
             div.className = "linha-data";
 
+            const dataStr = d.dataConsulta || d.data; // compatibilidade
+
             div.innerHTML = `
-            <label>
-              <input type="checkbox" class="chk-data" value="${d.data}" />
-              ${d.data}
-            </label>
-            <span>${d.total} registros</span>
-          `;
+    <label>
+      <input type="checkbox" class="chk-data" value="${dataStr}" />
+      ${dataStr}
+    </label>
+    <span>${d.total} registros</span>
+  `;
             listaDatasEl.appendChild(div);
           });
         } catch (err) {

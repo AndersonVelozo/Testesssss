@@ -1,106 +1,110 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <title>Painel Master TI - Alpha</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body class="master-page">
-    <div class="master-layout">
-      <!-- SIDEBAR -->
-      <aside class="master-sidebar">
-        <div class="master-sidebar-header">
-          <div class="master-brand">
-            <span class="master-brand-main">Alpha</span>
-            <span class="master-brand-sub">TI</span>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Painel Master TI - Alpha</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="master-page">
+  <div class="master-layout">
+    <!-- SIDEBAR -->
+    <aside class="master-sidebar">
+      <div class="master-sidebar-header">
+        <div class="master-brand">
+          <span class="master-brand-main">Alpha</span>
+          <span class="master-brand-sub">TI</span>
+        </div>
+      </div>
+
+      <nav class="master-nav">
+        <a href="#" class="master-nav-item active" data-view="dashboard" id="navDashboard">
+          Dashboard
+        </a>
+        <a href="#" class="master-nav-item" data-view="chamados" id="navChamados">
+          Chamados
+        </a>
+        <a href="#" class="master-nav-item" data-view="relatorios" id="navRelatorios">
+          Relatórios
+        </a>
+        <a href="#" class="master-nav-item" data-view="config" id="navConfig">
+          Configurações
+        </a>
+      </nav>
+
+      <button class="master-back-portal" onclick="window.location.href='home.html'">
+        ← Voltar ao Portal
+      </button>
+
+      <div class="master-sidebar-footer">
+        <div class="master-user-mini">
+          <div class="master-avatar-mini">TI</div>
+          <div class="master-user-info">
+            <span class="master-user-name" id="masterUserName">
+              Master TI
+            </span>
+            <span class="master-user-role" id="masterUserRole">
+              Administrador global
+            </span>
           </div>
         </div>
+      </div>
+    </aside>
 
-        <nav class="master-nav">
-          <a href="#" class="master-nav-item active">Dashboard</a>
-          <a href="#" class="master-nav-item">Chamados</a>
-          <a href="#" class="master-nav-item">Relatórios</a>
-          <a href="#" class="master-nav-item">Configurações</a>
-        </nav>
-
-        <button
-          class="master-back-portal"
-          onclick="window.location.href='home.html'"
-        >
-          ← Voltar ao Portal
-        </button>
-
-        <div class="master-sidebar-footer">
-          <div class="master-user-mini">
-            <div class="master-avatar-mini">TI</div>
-            <div class="master-user-info">
-              <span class="master-user-name" id="masterUserName">
-                Master TI
-              </span>
-              <span class="master-user-role" id="masterUserRole">
-                Administrador global
-              </span>
-            </div>
-          </div>
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="master-main">
+      <!-- HEADER -->
+      <header class="master-header">
+        <div>
+          <h1 id="masterMainTitle">Painel Master TI</h1>
+          <p class="master-header-sub" id="masterMainSubtitle">
+            Visão geral dos chamados internos de TI e atividades recentes.
+          </p>
         </div>
-      </aside>
 
-      <!-- CONTEÚDO PRINCIPAL -->
-      <main class="master-main">
-        <!-- HEADER -->
-        <header class="master-header">
-          <div>
-            <h1>Painel Master TI</h1>
-            <p class="master-header-sub">
-              Visão geral dos chamados internos de TI e atividades recentes.
-            </p>
-          </div>
+        <div class="master-header-actions">
+          <select class="master-select">
+            <option>Últimos 7 dias</option>
+            <option>Últimos 30 dias</option>
+            <option>Este mês</option>
+            <option>Últimos 90 dias</option>
+          </select>
+          <button class="btn-primary master-header-btn" id="btnNovoChamado">
+            + Novo chamado
+          </button>
+          <button class="btn-secondary master-header-btn" id="btnGoAdminUsers">
+            Gerenciar usuários
+          </button>
+        </div>
+      </header>
 
-          <div class="master-header-actions">
-            <select class="master-select">
-              <option>Últimos 7 dias</option>
-              <option>Últimos 30 dias</option>
-              <option>Este mês</option>
-              <option>Últimos 90 dias</option>
-            </select>
-            <button class="btn-primary master-header-btn">
-              + Novo chamado
-            </button>
-            <button
-              class="btn-secondary master-header-btn"
-              id="btnGoAdminUsers"
-            >
-              Gerenciar usuários
-            </button>
-          </div>
-        </header>
-
+      <!-- ========== VIEW: DASHBOARD (ATUAL) ========== -->
+      <section id="viewDashboard" class="master-view" aria-label="Dashboard Master TI">
         <!-- MÉTRICAS -->
         <section class="master-metrics">
           <article class="master-metric-card">
             <span class="master-metric-label">Chamados abertos</span>
-            <span class="master-metric-value" id="metricOpen">18</span>
+            <span class="master-metric-value" id="metricOpen">0</span>
             <span class="master-metric-sub">Em análise pela TI</span>
           </article>
 
           <article class="master-metric-card">
             <span class="master-metric-label">Em andamento</span>
-            <span class="master-metric-value" id="metricInProgress">9</span>
+            <span class="master-metric-value" id="metricInProgress">0</span>
             <span class="master-metric-sub">Com técnico designado</span>
           </article>
 
           <article class="master-metric-card">
             <span class="master-metric-label">Pendentes de aprovação</span>
-            <span class="master-metric-value" id="metricPendingApproval"
-              >3</span
-            >
+            <span class="master-metric-value" id="metricPendingApproval">0</span>
             <span class="master-metric-sub">Aguardando gestor</span>
           </article>
 
           <article class="master-metric-card">
             <span class="master-metric-label">Concluídos hoje</span>
-            <span class="master-metric-value" id="metricDoneToday">12</span>
+            <span class="master-metric-value" id="metricDoneToday">0</span>
             <span class="master-metric-sub">Resolvidos com sucesso</span>
           </article>
         </section>
@@ -112,12 +116,8 @@
             <div class="master-panel-header">
               <h2>Chamados recentes</h2>
               <div class="master-panel-actions">
-                <input
-                  type="text"
-                  class="master-input"
-                  placeholder="Buscar por número ou título..."
-                  id="searchTickets"
-                />
+                <input type="text" class="master-input" placeholder="Buscar por número ou título..."
+                  id="searchTickets" />
               </div>
             </div>
 
@@ -134,54 +134,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <!-- Linhas estáticas por enquanto;
-                       serão trocadas por dados reais depois -->
-                  <tr>
-                    <td>#1023</td>
-                    <td>Erro ao acessar sistema RADAR</td>
-                    <td>João Lima</td>
-                    <td>Sistema</td>
-                    <td>
-                      <span class="master-badge master-badge-open">Aberto</span>
-                    </td>
-                    <td>21/11/2025 09:13</td>
-                  </tr>
-                  <tr>
-                    <td>#1022</td>
-                    <td>Troca de notebook</td>
-                    <td>Maria Costa</td>
-                    <td>Equipamento</td>
-                    <td>
-                      <span class="master-badge master-badge-progress"
-                        >Em andamento</span
-                      >
-                    </td>
-                    <td>21/11/2025 08:47</td>
-                  </tr>
-                  <tr>
-                    <td>#1021</td>
-                    <td>Falha na VPN</td>
-                    <td>Rafael Sousa</td>
-                    <td>Rede</td>
-                    <td>
-                      <span class="master-badge master-badge-wait"
-                        >Pendente aprovação</span
-                      >
-                    </td>
-                    <td>20/11/2025 17:05</td>
-                  </tr>
-                  <tr>
-                    <td>#1017</td>
-                    <td>Reset de senha e-mail</td>
-                    <td>Ana Pereira</td>
-                    <td>Acesso</td>
-                    <td>
-                      <span class="master-badge master-badge-done"
-                        >Concluído</span
-                      >
-                    </td>
-                    <td>20/11/2025 15:32</td>
-                  </tr>
+                  <!-- Preenchido via JS -->
                 </tbody>
               </table>
             </div>
@@ -194,43 +147,155 @@
             </div>
 
             <ul class="master-timeline" id="masterTimeline">
-              <li>
-                <span class="master-timeline-dot"></span>
-                <div class="master-timeline-content">
-                  <strong>#1022</strong> movido para
-                  <span class="master-badge master-badge-progress"
-                    >Em andamento</span
-                  >
-                  <p class="master-timeline-meta">
-                    Hoje às 10:12 • Técnico: Carlos
-                  </p>
-                </div>
-              </li>
-              <li>
-                <span class="master-timeline-dot"></span>
-                <div class="master-timeline-content">
-                  <strong>#1017</strong> marcado como
-                  <span class="master-badge master-badge-done">Concluído</span>
-                  <p class="master-timeline-meta">
-                    Ontem às 16:40 • Validação do usuário
-                  </p>
-                </div>
-              </li>
-              <li>
-                <span class="master-timeline-dot"></span>
-                <div class="master-timeline-content">
-                  <strong>#1012</strong> aguardando aprovação do gestor
-                  <p class="master-timeline-meta">
-                    Ontem às 11:03 • Categoria: Aquisição
-                  </p>
-                </div>
-              </li>
+              <!-- Preenchido via JS -->
             </ul>
           </div>
         </section>
-      </main>
-    </div>
+      </section>
 
-    <script src="ti-master.js"></script>
-  </body>
+      <!-- ========== VIEW: CHAMADOS (MODO FILA COMPLETA) ========== -->
+      <section id="viewChamados" class="master-view hidden" aria-label="Fila de chamados">
+        <section class="master-panel">
+          <div class="master-panel-header">
+            <h2>Fila de chamados</h2>
+            <p class="master-header-sub">
+              Aqui você poderá, futuramente, aplicar filtros avançados,
+              atribuir chamados e visualizar SLAs detalhados.
+            </p>
+          </div>
+          <div class="master-panel-body">
+            <p>
+              Por enquanto, utilize a aba <strong>Dashboard</strong> para
+              acompanhar os chamados e alterar status pelo modal de detalhes.
+            </p>
+          </div>
+        </section>
+      </section>
+
+      <!-- ========== VIEW: RELATÓRIOS ========== -->
+      <section id="viewRelatorios" class="master-view hidden" aria-label="Relatórios de TI">
+        <section class="master-panel">
+          <div class="master-panel-header">
+            <h2>Relatórios</h2>
+          </div>
+          <div class="master-panel-body">
+            <p>
+              Espaço reservado para relatórios de chamados, tempo médio de
+              atendimento, SLAs, entre outros.
+            </p>
+            <p>
+              Podemos, depois, integrar com <strong>Power BI</strong> ou
+              gerar gráficos direto na aplicação.
+            </p>
+          </div>
+        </section>
+      </section>
+
+      <!-- ========== VIEW: CONFIGURAÇÕES ========== -->
+      <section id="viewConfig" class="master-view hidden" aria-label="Configurações do Painel Master TI">
+        <section class="master-panel">
+          <div class="master-panel-header">
+            <h2>Configurações do Painel</h2>
+          </div>
+          <div class="master-panel-body">
+            <p>
+              Aqui você poderá definir preferências do painel Master TI, como:
+            </p>
+            <ul>
+              <li>Intervalo de atualização automática;</li>
+              <li>Filtros padrão da Dashboard;</li>
+              <li>Regras de notificação e e-mail (futuro);</li>
+              <li>Políticas de status e fluxos de aprovação.</li>
+            </ul>
+            <p>
+              No momento é apenas uma área de placeholder, pronta para
+              receber essas configs.
+            </p>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL / OVERLAY DE DETALHES DO CHAMADO -->
+  <div class="master-detail-overlay hidden" id="ticketDetailOverlay">
+    <div class="master-detail">
+      <button class="master-detail-close" id="detailCloseBtn">×</button>
+
+      <h2 class="master-detail-title" id="detailTitle">Chamado</h2>
+      <p class="master-detail-sub">
+        <span id="detailStatusBadge"></span>
+      </p>
+
+      <div class="master-detail-grid">
+        <p>
+          <strong>Solicitante:</strong>
+          <span id="detailSolicitante"></span>
+        </p>
+        <p>
+          <strong>Categoria:</strong>
+          <span id="detailCategoria"></span>
+        </p>
+        <p>
+          <strong>Urgência:</strong>
+          <span id="detailUrgencia"></span>
+        </p>
+        <p>
+          <strong>Aberto em:</strong>
+          <span id="detailCriadoEm"></span>
+        </p>
+        <p>
+          <strong>Responsável:</strong>
+          <span id="detailResponsavel"></span>
+        </p>
+      </div>
+
+      <!-- SEÇÃO: MUDAR STATUS DO CHAMADO -->
+      <div class="master-detail-section">
+        <h3>Status do chamado</h3>
+        <div class="master-detail-status-actions">
+          <select id="detailStatusSelect" class="master-select">
+            <option value="new">Aberto</option>
+            <option value="processing_assigned">
+              Em andamento (designado)
+            </option>
+            <option value="processing_planned">
+              Em andamento (planejado)
+            </option>
+            <option value="pending">Pendente de aprovação</option>
+            <option value="solved">Resolvido</option>
+            <option value="closed">Fechado</option>
+            <option value="deleted">Deletado</option>
+          </select>
+          <button class="btn-secondary" id="detailUpdateStatusBtn">
+            Atualizar status
+          </button>
+        </div>
+      </div>
+
+      <div class="master-detail-section">
+        <h3>Descrição</h3>
+        <p id="detailDescricao" class="master-detail-desc"></p>
+      </div>
+
+      <div class="master-detail-section">
+        <h3>Histórico</h3>
+        <ul id="detailTimeline" class="master-timeline master-timeline-detail">
+          <!-- preenchido via JS -->
+        </ul>
+      </div>
+
+      <div class="master-detail-section">
+        <h3>Adicionar comentário</h3>
+        <textarea id="detailComentario" class="master-input" rows="3" placeholder="Digite um comentário..."></textarea>
+        <button class="btn-primary" id="detailSendComment">
+          Enviar comentário
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="ti-master.js"></script>
+</body>
+
 </html>

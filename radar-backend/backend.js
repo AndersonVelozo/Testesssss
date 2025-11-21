@@ -1859,6 +1859,130 @@ app.get(
   }
 );
 
+// Detalhes de um chamado + histórico
+app.get(
+  "/ti/master/chamados/:id",
+  authMiddleware,
+  requireMasterTiPermission,
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (!id) {
+        return res.status(400).json({ error: "ID de chamado inválido." });
+      }
+
+      const sqlChamado = `
+        SELECT id, titulo, descricao, tipo, categoria, urgencia, status,
+               solicitante_id, solicitante_nome,
+               responsavel_id, responsavel_nome,
+               criado_em, atualizado_em, fechado_em
+        FROM chamados_ti
+        WHERE id = $1;
+      `;
+
+      const { rows: rowsChamado } = await pool.query(sqlChamado, [id]);
+      const chamado = rowsChamado[0];
+
+      if (!chamado) {
+        return res.status(404).json({ error: "Chamado não encontrado." });
+      }
+
+      const sqlAtividades = `
+        SELECT id, chamado_id, tipo, descricao,
+               criado_por_id, criado_por_nome, criado_em
+        FROM chamados_ti_atividade
+        WHERE chamado_id = $1
+        ORDER BY criado_em ASC;
+      `;
+
+      const { rows: rowsAtividades } = await pool.query(sqlAtividades, [id]);
+
+      const atividades = rowsAtividades.map((a) => ({
+        id: a.id,
+        tipo: a.tipo,
+        descricao: a.descricao,
+        criadoPorId: a.criado_por_id,
+        criadoPorNome: a.criado_por_nome,
+        criadoEm: a.criado_em,
+      }));
+
+      return res.json({
+        chamado: {
+          ...chamado,
+          numero: `#${chamado.id}`,
+        },
+        atividades,
+      });
+    } catch (err) {
+      console.error("Erro GET /ti/master/chamados/:id:", err);
+      return res.status(500).json({ error: "Erro ao obter detalhes." });
+    }
+  }
+);
+
+// Adicionar comentário no chamado
+app.post(
+  "/ti/master/chamados/:id/comentario",
+  authMiddleware,
+  requireMasterTiPermission,
+  async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (!id) {
+        return res.status(400).json({ error: "ID de chamado inválido." });
+      }
+
+      const { texto } = req.body || {};
+      if (!texto || !texto.trim()) {
+        return res
+          .status(400)
+          .json({ error: "Texto do comentário é obrigatório." });
+      }
+
+      const userId = req.user.id;
+      const userNome = req.user.nome || "Master TI";
+
+      const { rows: rowsChk } = await pool.query(
+        "SELECT id FROM chamados_ti WHERE id = $1",
+        [id]
+      );
+      if (!rowsChk[0]) {
+        return res.status(404).json({ error: "Chamado não encontrado." });
+      }
+
+      const sqlInsert = `
+        INSERT INTO chamados_ti_atividade
+          (chamado_id, tipo, descricao, criado_por_id, criado_por_nome)
+        VALUES ($1, 'comment', $2, $3, $4)
+        RETURNING id, chamado_id, tipo, descricao,
+                  criado_por_id, criado_por_nome, criado_em;
+      `;
+
+      const { rows } = await pool.query(sqlInsert, [
+        id,
+        texto.trim(),
+        userId,
+        userNome,
+      ]);
+
+      const atividade = rows[0];
+
+      return res.status(201).json({
+        id: atividade.id,
+        chamadoId: atividade.chamado_id,
+        tipo: atividade.tipo,
+        descricao: atividade.descricao,
+        criadoPorId: atividade.criado_por_id,
+        criadoPorNome: atividade.criado_por_nome,
+        criadoEm: atividade.criado_em,
+      });
+    } catch (err) {
+      console.error("Erro POST /ti/master/chamados/:id/comentario:", err);
+      return res.status(500).json({ error: "Erro ao adicionar comentário." });
+    }
+  }
+);
+
 // Atividade recente (timeline lado direito do Master)
 app.get(
   "/ti/master/atividade",
@@ -1905,6 +2029,7 @@ app.get(
 );
 
 // Alterar status de um chamado (Master TI)
+// Alterar status de um chamado (Master TI)
 app.put(
   "/ti/master/chamados/:id/status",
   authMiddleware,
@@ -1937,15 +2062,15 @@ app.put(
       const sql = `
         UPDATE chamados_ti
         SET
-          status = $1,
-          responsavel_id = $2,
-          responsavel_nome = $3,
+          status = $1::varchar,
+          responsavel_id = $2::bigint,
+          responsavel_nome = $3::varchar,
           atualizado_em = NOW(),
           fechado_em = CASE
-            WHEN $1 IN ('solved', 'closed') THEN NOW()
+            WHEN $1::varchar IN ('solved', 'closed') THEN NOW()
             ELSE fechado_em
           END
-        WHERE id = $4
+        WHERE id = $4::bigint
         RETURNING
           id,
           titulo,
@@ -1958,8 +2083,8 @@ app.put(
       `;
 
       const { rows } = await pool.query(sql, [status, userId, userNome, id]);
-
       const chamado = rows[0];
+
       if (!chamado) {
         return res.status(404).json({ error: "Chamado não encontrado." });
       }

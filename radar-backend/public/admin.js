@@ -17,6 +17,12 @@ const togglePodeLote = document.querySelector("#usuario-pode-lote");
 const btnSalvar = document.querySelector("#btn-salvar-usuario");
 const spanErro = document.querySelector("#msg-erro-usuario");
 
+// permissões (versão simples)
+const togglePermRadar = document.querySelector("#usuario-perm-radar");
+const togglePermChamados = document.querySelector("#usuario-perm-chamados");
+const togglePermMasterTi = document.querySelector("#usuario-perm-masterti");
+const togglePermAdmin = document.querySelector("#usuario-perm-admin");
+
 const tbodyUsuarios = document.querySelector("#lista-usuarios tbody");
 const campoBusca = document.querySelector("#busca-usuarios");
 
@@ -51,12 +57,19 @@ function showErro(msg) {
 
 function limparFormulario() {
   usuarioEditandoId = null;
-  inputNome.value = "";
-  inputEmail.value = "";
-  inputSenha.value = "";
-  selectPerfil.value = "user"; // padrão
-  toggleAtivo.checked = true;
-  togglePodeLote.checked = true;
+  if (inputNome) inputNome.value = "";
+  if (inputEmail) inputEmail.value = "";
+  if (inputSenha) inputSenha.value = "";
+  if (selectPerfil) selectPerfil.value = "user"; // padrão
+  if (toggleAtivo) toggleAtivo.checked = true;
+  if (togglePodeLote) togglePodeLote.checked = true;
+
+  // padrão: RADAR e Chamados ligados, resto desligado (igual admin.html)
+  if (togglePermRadar) togglePermRadar.checked = true;
+  if (togglePermChamados) togglePermChamados.checked = true;
+  if (togglePermMasterTi) togglePermMasterTi.checked = false;
+  if (togglePermAdmin) togglePermAdmin.checked = false;
+
   showErro("");
 }
 
@@ -177,12 +190,21 @@ function renderizarUsuarios() {
 // ====== FORM ======
 function preencherFormularioParaEdicao(u) {
   usuarioEditandoId = u.id;
-  inputNome.value = u.nome || "";
-  inputEmail.value = u.email || "";
-  inputSenha.value = "";
-  selectPerfil.value = u.role === "admin" ? "admin" : "user";
-  toggleAtivo.checked = !!u.ativo;
-  togglePodeLote.checked = !!u.pode_lote;
+  if (inputNome) inputNome.value = u.nome || "";
+  if (inputEmail) inputEmail.value = u.email || "";
+  if (inputSenha) inputSenha.value = "";
+  if (selectPerfil) selectPerfil.value = u.role === "admin" ? "admin" : "user";
+  if (toggleAtivo) toggleAtivo.checked = !!u.ativo;
+  if (togglePodeLote) togglePodeLote.checked = !!u.pode_lote;
+
+  const perms = u.permissions || {};
+  if (togglePermRadar) togglePermRadar.checked = !!perms.radar;
+  if (togglePermChamados) togglePermChamados.checked = !!perms.chamados;
+  if (togglePermMasterTi)
+    togglePermMasterTi.checked = !!(perms.masterTi || perms.master_ti);
+  if (togglePermAdmin)
+    togglePermAdmin.checked = !!(perms.adminUsuarios || perms.admin);
+
   showErro("");
 }
 
@@ -191,13 +213,28 @@ async function salvarUsuario(e) {
   try {
     showErro("");
 
+    const permissions = {
+      radar: !!(togglePermRadar && togglePermRadar.checked),
+      chamados: !!(togglePermChamados && togglePermChamados.checked),
+      masterTi: !!(togglePermMasterTi && togglePermMasterTi.checked),
+      adminUsuarios: !!(togglePermAdmin && togglePermAdmin.checked),
+      // demais módulos não existem neste form simples, então gravamos como false
+      reservas: false,
+      financeiro: false,
+      estoque: false,
+      relatorios: false,
+      integracoes: false,
+      monitoramento: false,
+    };
+
     const payload = {
-      nome: inputNome.value.trim(),
-      email: inputEmail.value.trim(),
-      senha: inputSenha.value.trim(),
-      perfil: selectPerfil.value,
-      status: toggleAtivo.checked,
-      podeLote: togglePodeLote.checked,
+      nome: (inputNome && inputNome.value.trim()) || "",
+      email: (inputEmail && inputEmail.value.trim()) || "",
+      senha: (inputSenha && inputSenha.value.trim()) || "",
+      role: selectPerfil ? selectPerfil.value : "user",
+      ativo: toggleAtivo ? toggleAtivo.checked : true,
+      pode_lote: togglePodeLote ? togglePodeLote.checked : true,
+      permissions,
     };
 
     if (!payload.nome || !payload.email || !payload.senha) {
@@ -229,7 +266,7 @@ async function toggleAtivoUsuario(u) {
   try {
     await apiFetch(`/admin/usuarios/${u.id}`, {
       method: "PUT",
-      body: JSON.stringify({ status: !u.ativo }),
+      body: JSON.stringify({ ativo: !u.ativo }),
     });
     await carregarUsuarios();
   } catch (err) {

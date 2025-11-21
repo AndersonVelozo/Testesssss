@@ -22,6 +22,7 @@
         sans-serif;
       color: #e5e7eb;
 
+      /* fundo da página */
       background-image: radial-gradient(circle at top,
           rgba(59, 130, 246, 0.35),
           transparent 55%),
@@ -32,8 +33,19 @@
       background-position: center top, center bottom, center 82%;
       background-repeat: no-repeat, no-repeat, no-repeat;
       background-attachment: fixed, fixed, fixed;
+
       background-color: #020617;
       box-shadow: inset 0 0 0 2000px rgba(0, 0, 0, 0.35);
+
+      /* 🟢 ADICIONE AQUI */
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+    }
+
+    body.radar-page::-webkit-scrollbar {
+      width: 0px;
+      height: 0px;
     }
   </style>
 
@@ -288,6 +300,10 @@
       </table>
     </div>
   </div>
+
+  <button class="ti-back-portal" onclick="window.location.href='home.html'">
+    ← Voltar ao Portal
+  </button>
 
   <!-- JS do front separado -->
   <script src="./server.js"></script>

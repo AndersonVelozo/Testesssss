@@ -828,6 +828,73 @@
             </div>
           </div>
 
+          <!-- PERMISSÕES ADICIONAIS -->
+          <div class="admin-col permissoes" style="margin-top: 12px">
+            <label>Permissões do Sistema</label>
+
+            <!-- linha 1 -->
+            <label class="toggle">
+              <input type="checkbox" id="permRadar" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Coletor de Habilitação RADAR</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="permChamados" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Chamados Internos de TI</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="permReservas" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Reservas de Equipamentos</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="permMasterTi" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Painel Master TI</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="permAdmin" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Administração de Usuários</span>
+            </label>
+
+            <!-- linha 2 -->
+            <label class="toggle">
+              <input type="checkbox" id="permFinanceiro" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Módulo Financeiro</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="permEstoque" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Módulo de Estoque</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="permRelatorios" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Relatórios Inteligentes</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="permIntegracoes" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Integrações Externas</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" id="permMonitoramento" />
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-label-text">Monitoramento em Tempo Real</span>
+            </label>
+          </div>
+
           <!-- BOTÕES -->
           <div class="admin-btn-row">
             <button type="submit" class="btn-primary" id="salvarBtn">
@@ -838,6 +905,10 @@
               🧹 Limpar
             </button>
           </div>
+
+          <button class="master-back-portal" onclick="window.location.href='home.html'">
+            ← Voltar ao Portal
+          </button>
 
           <div id="formMsg" class="progress-text"></div>
         </form>
@@ -872,6 +943,7 @@
             </tbody>
           </table>
         </div>
+
 
         <div id="paginacaoUsuarios" class="admin-pagination"></div>
       </section>
@@ -955,6 +1027,16 @@
     const salvarBtn = document.getElementById("salvarBtn");
     const limparFormBtn = document.getElementById("limparFormBtn");
     const formMsg = document.getElementById("formMsg");
+    const permRadarCheckbox = document.getElementById("permRadar");
+    const permChamadosCheckbox = document.getElementById("permChamados");
+    const permReservasCheckbox = document.getElementById("permReservas");
+    const permMasterTiCheckbox = document.getElementById("permMasterTi");
+    const permAdminCheckbox = document.getElementById("permAdmin");
+    const permFinanceiroCheckbox = document.getElementById("permFinanceiro");
+    const permEstoqueCheckbox = document.getElementById("permEstoque");
+    const permRelatoriosCheckbox = document.getElementById("permRelatorios");
+    const permIntegracoesCheckbox = document.getElementById("permIntegracoes");
+    const permMonitoramentoCheckbox = document.getElementById("permMonitoramento");
 
     const usersTableBody = document.querySelector("#usersTable tbody");
     const paginationEl = document.getElementById("paginacaoUsuarios");
@@ -1059,6 +1141,19 @@
       roleSelect.value = "user";
       ativoCheckbox.checked = true;
       podeLoteCheckbox.checked = true;
+
+      // padrões de permissões para NOVO usuário
+      permRadarCheckbox.checked = true;
+      permChamadosCheckbox.checked = true;
+      permReservasCheckbox.checked = false;
+      permMasterTiCheckbox.checked = false;
+      permAdminCheckbox.checked = false;
+      permFinanceiroCheckbox.checked = false;
+      permEstoqueCheckbox.checked = false;
+      permRelatoriosCheckbox.checked = false;
+      permIntegracoesCheckbox.checked = false;
+      permMonitoramentoCheckbox.checked = false;
+
       salvarBtn.textContent = "💾 Salvar";
       setFormMessage("");
 
@@ -1248,6 +1343,18 @@
         role: roleSelect.value,
         ativo: !!ativoCheckbox.checked,
         pode_lote: !!podeLoteCheckbox.checked,
+        permissions: {
+          radar: !!permRadarCheckbox.checked,
+          chamados: !!permChamadosCheckbox.checked,
+          reservas: !!permReservasCheckbox.checked,
+          masterTi: !!permMasterTiCheckbox.checked,
+          adminUsuarios: !!permAdminCheckbox.checked,
+          financeiro: !!permFinanceiroCheckbox.checked,
+          estoque: !!permEstoqueCheckbox.checked,
+          relatorios: !!permRelatoriosCheckbox.checked,
+          integracoes: !!permIntegracoesCheckbox.checked,
+          monitoramento: !!permMonitoramentoCheckbox.checked,
+        },
       };
 
       if (senha) payload.senha = senha;
@@ -1312,6 +1419,18 @@
         roleSelect.value = u.role;
         ativoCheckbox.checked = !!u.ativo;
         podeLoteCheckbox.checked = !!u.pode_lote;
+
+        const perms = u.permissions || {};
+        permRadarCheckbox.checked = !!perms.radar;
+        permChamadosCheckbox.checked = !!perms.chamados;
+        permReservasCheckbox.checked = !!perms.reservas;
+        permMasterTiCheckbox.checked = !!perms.masterTi;
+        permAdminCheckbox.checked = !!perms.adminUsuarios;
+        permFinanceiroCheckbox.checked = !!perms.financeiro;
+        permEstoqueCheckbox.checked = !!perms.estoque;
+        permRelatoriosCheckbox.checked = !!perms.relatorios;
+        permIntegracoesCheckbox.checked = !!perms.integracoes;
+        permMonitoramentoCheckbox.checked = !!perms.monitoramento;
 
         salvarBtn.textContent = "Atualizar";
         setFormMessage("Editando usuário...");

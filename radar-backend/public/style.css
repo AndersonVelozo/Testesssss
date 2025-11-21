@@ -1564,6 +1564,220 @@ body.ti-page::-webkit-scrollbar {
    PAINEL MASTER TI (DASHBOARD)
    ============================= */
 
+/* Centralizar o modal e impedir de passar da altura da tela */
+.master-detail-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.master-detail {
+  max-height: 80vh; /* não passa de 80% da altura da tela */
+  width: min(900px, 100%);
+  overflow-y: auto; /* só o conteúdo interno rola */
+}
+
+/* Textarea do comentário: não ficar redonda nem gigante */
+.master-detail textarea.master-input {
+  border-radius: 18px; /* arredondado normal, não pílula */
+  min-height: 110px;
+  max-height: 220px;
+  resize: vertical; /* deixa o usuário aumentar se quiser */
+}
+
+.master-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.master-detail-overlay.hidden {
+  display: none;
+}
+
+.master-detail {
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  overflow: auto;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  padding: 24px 28px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.8);
+}
+
+.master-detail-close {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 22px;
+  cursor: pointer;
+  float: right;
+}
+
+.master-detail-title {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+}
+
+.master-detail-sub {
+  margin: 0 0 16px;
+  color: #9ca3af;
+}
+
+.master-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.master-detail-section {
+  margin-top: 18px;
+}
+
+.master-detail-desc {
+  white-space: pre-wrap;
+  line-height: 1.5;
+  color: #e5e7eb;
+}
+
+.master-timeline-detail li {
+  padding-bottom: 10px;
+}
+
+.master-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 999;
+}
+
+.master-detail-overlay.hidden {
+  display: none;
+}
+
+.master-detail {
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  overflow: auto;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  padding: 24px 28px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.8);
+}
+
+.master-detail textarea.master-input {
+  border-radius: 18px;
+  min-height: 110px;
+  max-height: 220px;
+  resize: vertical;
+}
+
+/* Layout geral do Painel Master TI */
+body.master-page {
+  height: 100vh;
+  overflow: hidden; /* impede scroll da página inteira */
+  padding: 24px;
+}
+
+.master-layout {
+  height: 100%;
+  display: flex;
+  gap: 20px;
+}
+
+/* Conteúdo principal com scroll vertical interno */
+.master-main {
+  flex: 1;
+  overflow-y: auto; /* scroll só aqui */
+  max-height: 100%;
+  padding-right: 4px; /* pra não colar na borda */
+}
+
+/* Esconder barra de rolagem (estilo "oculto") */
+.master-main::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.master-main {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+/* Modal (você já tinha, mas reforço aqui) */
+.master-detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 999;
+}
+
+.master-detail-overlay.hidden {
+  display: none;
+}
+
+.master-detail {
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  overflow: auto;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  padding: 24px 28px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.8);
+}
+
+/* Status dentro do modal */
+.master-detail-status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.master-detail textarea.master-input {
+  border-radius: 18px;
+  min-height: 110px;
+  max-height: 220px;
+  resize: vertical;
+}
+
+/* Vistas internas do Painel Master (Dashboard / Chamados / Relatórios / Configurações) */
+.master-view {
+  display: block;
+}
+
+.master-view.hidden {
+  display: none;
+}
+
+/* Garante scroll vertical padrão na página master */
+body.master-page {
+  margin: 0;
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
 body.master-page {
   margin: 0;
   min-height: 100vh;

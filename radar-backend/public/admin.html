@@ -9,8 +9,8 @@
 
   <style>
     /* ===================================
-          BASE / LAYOUT 
-      =================================== */
+            BASE / LAYOUT
+    =================================== */
 
     html,
     body {
@@ -18,9 +18,7 @@
       margin: 0;
       padding: 0;
       overflow-x: hidden;
-      /* sem scroll lateral */
       overflow-y: auto;
-      /* scroll vertical normal */
     }
 
     body.admin-page {
@@ -36,8 +34,8 @@
     }
 
     /* ===================================
-                    HEADER
-      =================================== */
+                  HEADER
+    =================================== */
 
     .admin-header {
       display: flex;
@@ -131,8 +129,8 @@
     }
 
     /* ===================================
-                 GRID / CARDS
-      =================================== */
+               GRID / CARDS
+    =================================== */
 
     .admin-grid {
       display: grid;
@@ -148,8 +146,10 @@
       border-radius: 18px;
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
       backdrop-filter: blur(12px);
-      overflow: visible;
-      /* deixa dropdown sair pra fora */
+      overflow: hidden;
+      display: flex;
+      /* 👈 card em coluna */
+      flex-direction: column;
     }
 
     .admin-card h2 {
@@ -170,7 +170,7 @@
 
     /* ===================================
                     FORM
-      =================================== */
+    =================================== */
 
     .admin-row-3 {
       display: flex;
@@ -200,6 +200,7 @@
     }
 
     /* Toggles */
+
     .toggle {
       display: inline-flex;
       align-items: center;
@@ -242,9 +243,7 @@
       transform: translateX(16px);
     }
 
-    /* ===================================
-                MINI TOGGLE TABELA
-      =================================== */
+    /* MINI TOGGLE TABELA */
 
     .mini-toggle input {
       position: absolute;
@@ -280,40 +279,7 @@
       transform: translateX(14px);
     }
 
-    /* ===================================
-                PAGINAÇÃO
-      =================================== */
-
-    .admin-pagination {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 10px;
-      color: #9ca3af;
-    }
-
-    .admin-pagination button {
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      background: transparent;
-      color: #e5e7eb;
-      cursor: pointer;
-    }
-
-    .admin-pagination button:hover:not(:disabled) {
-      border-color: rgba(129, 140, 248, 0.95);
-      background: rgba(30, 64, 175, 0.6);
-    }
-
-    .admin-pagination button:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
-
-    /* ===================================
-             BUSCA / TABELA / BADGES
-      =================================== */
+    /* BUSCA / TABELA / BADGES */
 
     .search-box {
       width: 100%;
@@ -334,6 +300,8 @@
       height: calc(100% - 70px);
       overflow-y: auto;
       border-radius: 14px;
+      flex: 1;
+      /* 👈 ocupa o meio do card */
     }
 
     #usersTable th:nth-child(4),
@@ -378,9 +346,7 @@
       font-size: 0.75rem;
     }
 
-    /* ===================================
-                 BOTÕES GERAIS
-      =================================== */
+    /* BOTÕES GERAIS */
 
     .admin-btn-row {
       display: flex;
@@ -439,7 +405,8 @@
       margin-top: 8px;
     }
 
-    /* Container do select customizado */
+    /* SELECT CUSTOMIZADO */
+
     .custom-select {
       position: relative;
       width: 100%;
@@ -473,9 +440,7 @@
       display: none;
       max-height: 180px;
       overflow-y: auto;
-      /* scroll só vertical quando precisar */
       overflow-x: hidden;
-      /* 🚫 sem scroll horizontal */
       z-index: 50;
     }
 
@@ -489,17 +454,62 @@
       background: rgba(59, 130, 246, 0.25);
     }
 
-    /* Ícone de seta */
     .custom-select-arrow {
       font-size: 0.8rem;
       opacity: 0.7;
     }
 
-    /* ===================================
-                 TEMA CLARO
-      =================================== */
+    .custom-select-list::-webkit-scrollbar {
+      display: none;
+    }
 
-    /* Corpo / background / texto */
+    .custom-select-list {
+      scrollbar-width: none;
+    }
+
+    /* PAGINAÇÃO – AGORA DENTRO DO CARD */
+    .admin-pagination {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(148, 163, 184, 0.35);
+      /* 👈 linha separando da tabela */
+      color: #9ca3af;
+    }
+
+    .admin-pagination button {
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: transparent;
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 0.8rem;
+      min-width: 32px;
+    }
+
+    .admin-pagination button:hover:not(:disabled) {
+      border-color: rgba(129, 140, 248, 0.95);
+      background: rgba(30, 64, 175, 0.6);
+    }
+
+    .admin-pagination button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    /* Estado ativo (quando JS marca a página atual) */
+    .admin-pagination .page-active {
+      background: rgba(59, 130, 246, 0.95);
+      border-color: rgba(59, 130, 246, 1);
+      color: #e5e7eb;
+      box-shadow: 0 0 12px rgba(37, 99, 235, 0.6);
+    }
+
+    /* TEMA CLARO */
+
     body.admin-page.light-theme {
       background: #f3f4f6;
       color: #0f172a;
@@ -517,21 +527,18 @@
       color: #6b7280;
     }
 
-    /* Avatar mais claro no tema branco */
     body.admin-page.light-theme .admin-avatar {
       background: radial-gradient(circle at 30% 30%, #4f46e5, #e5e7ff);
       color: #111827;
       box-shadow: 0 0 0 2px #e5e7eb;
     }
 
-    /* Botão de tema no claro */
     body.admin-page.light-theme .btn-icon {
       background: #f9fafb;
       color: #111827;
       border-color: #e5e7eb;
     }
 
-    /* Inputs no tema claro */
     body.admin-page.light-theme input[type="text"],
     body.admin-page.light-theme input[type="email"],
     body.admin-page.light-theme input[type="password"] {
@@ -550,7 +557,6 @@
       border-color: #d1d5db;
     }
 
-    /* Select customizado no tema claro */
     body.admin-page.light-theme .custom-select-display {
       background: #ffffff;
       color: #111827;
@@ -570,16 +576,6 @@
       background: rgba(59, 130, 246, 0.12);
     }
 
-    .custom-select-list::-webkit-scrollbar {
-      display: none;
-    }
-
-    .custom-select-list {
-      scrollbar-width: none;
-      /* Firefox */
-    }
-
-    /* Badges mais fortes */
     body.admin-page.light-theme .badge-admin {
       background: #e0e7ff;
       color: #1d4ed8;
@@ -600,7 +596,6 @@
       color: #b91c1c;
     }
 
-    /* Toggles no tema claro */
     body.admin-page.light-theme .toggle-track,
     body.admin-page.light-theme .mini-toggle-track {
       background: #e5e7eb;
@@ -613,7 +608,6 @@
       border-color: #3b82f6;
     }
 
-    /* Botões no tema claro */
     body.admin-page.light-theme .btn-primary {
       box-shadow: 0 0 14px rgba(59, 130, 246, 0.45);
     }
@@ -629,9 +623,7 @@
       color: #0f172a;
     }
 
-    /* ===================================
-                 RESPONSIVO
-      =================================== */
+    /* RESPONSIVO */
 
     @media (max-width: 1024px) {
 
@@ -721,6 +713,7 @@
       }
     }
   </style>
+
 </head>
 
 <body class="admin-page">
@@ -832,65 +825,91 @@
           <div class="admin-col permissoes" style="margin-top: 12px">
             <label>Permissões do Sistema</label>
 
-            <!-- linha 1 -->
             <label class="toggle">
               <input type="checkbox" id="permRadar" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Coletor de Habilitação RADAR</span>
             </label>
 
             <label class="toggle">
               <input type="checkbox" id="permChamados" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Chamados Internos de TI</span>
             </label>
 
             <label class="toggle">
+              <input type="checkbox" id="permChatBot" />
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
+              <span class="toggle-label-text">Chat Bot</span>
+            </label>
+
+            <label class="toggle">
               <input type="checkbox" id="permReservas" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Reservas de Equipamentos</span>
             </label>
 
             <label class="toggle">
               <input type="checkbox" id="permMasterTi" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Painel Master TI</span>
             </label>
 
             <label class="toggle">
               <input type="checkbox" id="permAdmin" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Administração de Usuários</span>
             </label>
 
-            <!-- linha 2 -->
             <label class="toggle">
               <input type="checkbox" id="permFinanceiro" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Módulo Financeiro</span>
             </label>
 
             <label class="toggle">
               <input type="checkbox" id="permEstoque" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Módulo de Estoque</span>
             </label>
 
             <label class="toggle">
               <input type="checkbox" id="permRelatorios" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Relatórios Inteligentes</span>
             </label>
 
             <label class="toggle">
               <input type="checkbox" id="permIntegracoes" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Integrações Externas</span>
             </label>
 
             <label class="toggle">
               <input type="checkbox" id="permMonitoramento" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
               <span class="toggle-label-text">Monitoramento em Tempo Real</span>
             </label>
           </div>
@@ -906,7 +925,7 @@
             </button>
           </div>
 
-          <button class="master-back-portal" onclick="window.location.href='home.html'">
+          <button type="button" class="master-back-portal" onclick="window.location.href='home.html'">
             ← Voltar ao Portal
           </button>
 
@@ -944,601 +963,13 @@
           </table>
         </div>
 
-
         <div id="paginacaoUsuarios" class="admin-pagination"></div>
       </section>
     </div>
   </div>
 
-  <script>
-    /* ----------------------------------
-      CONFIG & HELPERS
-    ---------------------------------- */
-
-    const isLocalHost =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-
-    const BACKEND_BASE_URL = isLocalHost
-      ? "http://localhost:3000"
-      : window.location.origin;
-
-    function getToken() {
-      return (
-        localStorage.getItem("radar_token") ||
-        localStorage.getItem("token") ||
-        localStorage.getItem("authToken") ||
-        ""
-      );
-    }
-
-
-    function gerarAvatarInicial(nome) {
-      if (!nome || !nome.length) return "A";
-      return nome.trim()[0].toUpperCase();
-    }
-
-    // igual ao home.js
-    function decodeJwtPayload(token) {
-      try {
-        const [, payloadBase64] = token.split(".");
-        if (!payloadBase64) return {};
-        const normalized = payloadBase64.replace(/-/g, "+").replace(/_/g, "/");
-        const json = atob(normalized);
-        return JSON.parse(json);
-      } catch (err) {
-        console.error("Erro ao decodificar token:", err);
-        return {};
-      }
-    }
-
-    function getCurrentUser() {
-      const token = getToken();
-      if (!token) return null;
-
-      const payload = decodeJwtPayload(token);
-
-      return {
-        ...payload,
-        nome: payload.nome || payload.name || "",
-        role: payload.role || "user",
-        permissions: payload.permissions || {},
-      };
-    }
-
-    /* ----------------------------------
-      ELEMENTOS
-    ---------------------------------- */
-
-    const adminUserNameEl = document.getElementById("adminUserName");
-    const adminUserRoleEl = document.getElementById("adminUserRole");
-    const adminAvatarEl = document.getElementById("adminAvatar");
-    const themeToggle = document.getElementById("themeToggle");
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    const userForm = document.getElementById("userForm");
-    const userIdInput = document.getElementById("userId");
-    const nomeInput = document.getElementById("nome");
-    const emailInput = document.getElementById("email");
-    const senhaInput = document.getElementById("senha");
-    const roleSelect = document.getElementById("role");
-    const ativoCheckbox = document.getElementById("ativo");
-    const podeLoteCheckbox = document.getElementById("podeLote");
-    const salvarBtn = document.getElementById("salvarBtn");
-    const limparFormBtn = document.getElementById("limparFormBtn");
-    const formMsg = document.getElementById("formMsg");
-    const permRadarCheckbox = document.getElementById("permRadar");
-    const permChamadosCheckbox = document.getElementById("permChamados");
-    const permReservasCheckbox = document.getElementById("permReservas");
-    const permMasterTiCheckbox = document.getElementById("permMasterTi");
-    const permAdminCheckbox = document.getElementById("permAdmin");
-    const permFinanceiroCheckbox = document.getElementById("permFinanceiro");
-    const permEstoqueCheckbox = document.getElementById("permEstoque");
-    const permRelatoriosCheckbox = document.getElementById("permRelatorios");
-    const permIntegracoesCheckbox = document.getElementById("permIntegracoes");
-    const permMonitoramentoCheckbox = document.getElementById("permMonitoramento");
-
-    const usersTableBody = document.querySelector("#usersTable tbody");
-    const paginationEl = document.getElementById("paginacaoUsuarios");
-
-    let usuarios = [];
-    let paginaAtual = 1;
-    const porPagina = 6;
-
-    /* ----------------------------------
-   PROTEÇÃO DE ROTA
- ---------------------------------- */
-    (function proteger() {
-      const token = getToken();
-      if (!token) {
-        window.location.href = "login.html";
-        return;
-      }
-
-      const user = getCurrentUser();
-      const roleLS = localStorage.getItem("usuarioRole") || "";
-
-      // verifica admin pelo token OU pelo localStorage (igual home.js)
-      const isAdminFromToken =
-        user && (user.role === "admin" || !!user.permissions?.admin);
-      const isAdminFromLS = roleLS === "admin";
-
-      const isAdmin = isAdminFromToken || isAdminFromLS;
-
-      if (!isAdmin) {
-        alert("Acesso restrito ao administrador do sistema.");
-        window.location.href = "home.html";
-        return;
-      }
-
-      const nome =
-        (user && user.nome) ||
-        localStorage.getItem("usuarioNome") ||
-        "Administrador";
-      const role = (user && user.role) || roleLS || "admin";
-
-      adminUserNameEl.textContent = nome;
-      adminUserRoleEl.textContent = role;
-      adminAvatarEl.textContent = gerarAvatarInicial(nome);
-    })();
-
-    /* ----------------------------------
-      THEME: DARK / LIGHT
-    ---------------------------------- */
-
-    if (!localStorage.getItem("adminTheme")) {
-      localStorage.setItem("adminTheme", "dark");
-    }
-
-    function aplicarTema() {
-      const tema = localStorage.getItem("adminTheme");
-
-      if (tema === "light") {
-        document.body.classList.add("light-theme");
-        themeToggle.textContent = "☀️";
-      } else {
-        document.body.classList.remove("light-theme");
-        themeToggle.textContent = "🌙";
-      }
-    }
-
-    aplicarTema();
-
-    themeToggle.addEventListener("click", () => {
-      const atual = localStorage.getItem("adminTheme");
-      const novo = atual === "light" ? "dark" : "light";
-      localStorage.setItem("adminTheme", novo);
-      aplicarTema();
-    });
-
-    /* ----------------------------------
-      LOGOUT
-    ---------------------------------- */
-
-    logoutBtn.onclick = () => {
-      localStorage.clear();
-      window.location.href = "login.html";
-    };
-
-    /* ----------------------------------
-      MSG FORM
-    ---------------------------------- */
-
-    function setFormMessage(msg, err = false) {
-      formMsg.textContent = msg || "";
-      formMsg.style.color = err ? "#fca5a5" : "#9ca3af";
-    }
-
-    /* ----------------------------------
-      LIMPAR FORM
-    ---------------------------------- */
-
-    function limparFormulario() {
-      userIdInput.value = "";
-      nomeInput.value = "";
-      emailInput.value = "";
-      senhaInput.value = "";
-      roleSelect.value = "user";
-      ativoCheckbox.checked = true;
-      podeLoteCheckbox.checked = true;
-
-      // padrões de permissões para NOVO usuário
-      permRadarCheckbox.checked = true;
-      permChamadosCheckbox.checked = true;
-      permReservasCheckbox.checked = false;
-      permMasterTiCheckbox.checked = false;
-      permAdminCheckbox.checked = false;
-      permFinanceiroCheckbox.checked = false;
-      permEstoqueCheckbox.checked = false;
-      permRelatoriosCheckbox.checked = false;
-      permIntegracoesCheckbox.checked = false;
-      permMonitoramentoCheckbox.checked = false;
-
-      salvarBtn.textContent = "💾 Salvar";
-      setFormMessage("");
-
-      const selectText = document.getElementById("selectRoleText");
-      if (selectText) {
-        selectText.textContent = "Usuário";
-      }
-    }
-
-    limparFormBtn.addEventListener("click", limparFormulario);
-
-    /* ----------------------------------
-      PAGINAÇÃO
-    ---------------------------------- */
-
-    function paginar(array, page, perPage) {
-      const start = (page - 1) * perPage;
-      return array.slice(start, start + perPage);
-    }
-
-    function renderizarPaginacao(total) {
-      const paginas = Math.ceil(total / porPagina);
-      paginationEl.innerHTML = "";
-
-      if (paginas <= 1) return;
-
-      for (let p = 1; p <= paginas; p++) {
-        const btn = document.createElement("button");
-        btn.textContent = p;
-        btn.className = "btn-secondary btn-sm";
-        if (p === paginaAtual) {
-          btn.style.background = "rgba(255,255,255,0.15)";
-        }
-        btn.onclick = () => {
-          paginaAtual = p;
-          renderizarUsuarios();
-        };
-        paginationEl.appendChild(btn);
-      }
-    }
-
-    /* ----------------------------------
-      RENDERIZAR USUÁRIOS
-    ---------------------------------- */
-
-    function renderizarUsuarios() {
-      usersTableBody.innerHTML = "";
-
-      if (!usuarios.length) {
-        usersTableBody.innerHTML = `
-            <tr class="no-data-row">
-              <td colspan="6" class="no-data">Nenhum usuário cadastrado.</td>
-            </tr>`;
-        return;
-      }
-
-      const listaPagina = paginar(usuarios, paginaAtual, porPagina);
-      renderizarPaginacao(usuarios.length);
-
-      listaPagina.forEach((u) => {
-        const tr = document.createElement("tr");
-        tr.dataset.nome = (u.nome || "").toLowerCase();
-        tr.dataset.email = (u.email || "").toLowerCase();
-
-        tr.innerHTML = `
-            <td>${u.nome || ""}</td>
-            <td>${u.email || ""}</td>
-
-            <td>
-              <span class="badge ${u.role === "admin" ? "badge-admin" : "badge-user"
-          }">${u.role}</span>
-            </td>
-
-            <td>
-              <label class="toggle toggle-table">
-                <input type="checkbox" class="toggle-lote" data-id="${u.id}" ${u.pode_lote ? "checked" : ""
-          }>
-                <span class="toggle-track">
-                  <span class="toggle-thumb"></span>
-                </span>
-              </label>
-            </td>
-
-            <td>
-              <span class="badge ${u.ativo ? "badge-ativo" : "badge-inativo"}">
-                ${u.ativo ? "Ativo" : "Inativo"}
-              </span>
-            </td>
-
-            <td>
-              <div class="admin-actions">
-                <button class="btn-secondary btn-sm edit-user" data-id="${u.id
-          }">Editar</button>
-                <button class="btn-secondary btn-sm delete-user" data-id="${u.id
-          }">Excluir</button>
-              </div>
-            </td>
-          `;
-
-        usersTableBody.appendChild(tr);
-      });
-    }
-
-    /* ----------------------------------
-      BUSCA / FILTRO
-    ---------------------------------- */
-
-    document.getElementById("buscaUsuario").addEventListener("input", (e) => {
-      const termo = e.target.value.toLowerCase();
-
-      document.querySelectorAll("#usersTable tbody tr").forEach((linha) => {
-        const nome = linha.dataset.nome || "";
-        const email = linha.dataset.email || "";
-
-        linha.style.display =
-          nome.includes(termo) || email.includes(termo) ? "" : "none";
-      });
-    });
-
-    /* ----------------------------------
-      CARREGAR USUÁRIOS DO BACKEND
-    ---------------------------------- */
-
-    async function carregarUsuarios() {
-      const token = getToken();
-
-      if (!token) {
-        console.warn("Sem token, redirecionando para login...");
-        alert("Sessão expirada. Faça login novamente.");
-        window.location.href = "login.html";
-        return;
-      }
-
-      try {
-        const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await resp.json().catch(() => ({}));
-
-        if (!resp.ok) {
-          throw new Error(data.error || "Erro ao carregar usuários");
-        }
-
-        // 👉 aqui usamos o array GLOBAL
-        usuarios = Array.isArray(data) ? data : [];
-        paginaAtual = 1;
-        renderizarUsuarios();
-        setFormMessage(""); // limpa msg de erro se tinha
-      } catch (e) {
-        console.error("Falha ao carregar usuários:", e);
-        setFormMessage("Erro ao carregar usuários.", true);
-        usuarios = [];
-        renderizarUsuarios();
-      }
-    }
-
-    /* ----------------------------------
-      SALVAR USUÁRIO (CRIAR / EDITAR)
-    ---------------------------------- */
-
-    userForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const id = userIdInput.value || null;
-      const nome = nomeInput.value.trim();
-      const email = emailInput.value.trim();
-      const senha = senhaInput.value.trim();
-
-      if (!nome || !email) {
-        setFormMessage("Nome e e-mail são obrigatórios.", true);
-        return;
-      }
-
-      if (!id && !senha) {
-        setFormMessage("Senha obrigatória para novo usuário.", true);
-        return;
-      }
-
-      const payload = {
-        nome,
-        email,
-        role: roleSelect.value,
-        ativo: !!ativoCheckbox.checked,
-        pode_lote: !!podeLoteCheckbox.checked,
-        permissions: {
-          radar: !!permRadarCheckbox.checked,
-          chamados: !!permChamadosCheckbox.checked,
-          reservas: !!permReservasCheckbox.checked,
-          masterTi: !!permMasterTiCheckbox.checked,
-          adminUsuarios: !!permAdminCheckbox.checked,
-          financeiro: !!permFinanceiroCheckbox.checked,
-          estoque: !!permEstoqueCheckbox.checked,
-          relatorios: !!permRelatoriosCheckbox.checked,
-          integracoes: !!permIntegracoesCheckbox.checked,
-          monitoramento: !!permMonitoramentoCheckbox.checked,
-        },
-      };
-
-      if (senha) payload.senha = senha;
-
-      salvarBtn.disabled = true;
-      setFormMessage("Salvando usuário...");
-
-      try {
-        const url = id
-          ? `${BACKEND_BASE_URL}/admin/usuarios/${id}`
-          : `${BACKEND_BASE_URL}/admin/usuarios`;
-
-        const method = id ? "PUT" : "POST";
-
-        const resp = await fetch(url, {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + getToken(),
-          },
-          body: JSON.stringify(payload),
-        });
-
-        const data = await resp.json().catch(() => ({}));
-
-        if (!resp.ok) {
-          console.error("Erro salvar usuário:", data);
-          setFormMessage(
-            data.error || "Não foi possível salvar o usuário.",
-            true
-          );
-        } else {
-          setFormMessage(id ? "Usuário atualizado!" : "Usuário criado!");
-          limparFormulario();
-          await carregarUsuarios();
-        }
-      } catch (err) {
-        console.error(err);
-        setFormMessage("Erro inesperado ao salvar usuário.", true);
-      } finally {
-        salvarBtn.disabled = false;
-      }
-    });
-
-    /* ----------------------------------
-      EDITAR / EXCLUIR / TOGGLE LOTE
-    ---------------------------------- */
-
-    usersTableBody.addEventListener("click", async (e) => {
-      const btn = e.target;
-
-      // EDITAR
-      if (btn.classList.contains("edit-user")) {
-        const id = btn.dataset.id;
-        const u = usuarios.find((x) => String(x.id) === String(id));
-        if (!u) return;
-
-        userIdInput.value = u.id;
-        nomeInput.value = u.nome;
-        emailInput.value = u.email;
-        senhaInput.value = "";
-        roleSelect.value = u.role;
-        ativoCheckbox.checked = !!u.ativo;
-        podeLoteCheckbox.checked = !!u.pode_lote;
-
-        const perms = u.permissions || {};
-        permRadarCheckbox.checked = !!perms.radar;
-        permChamadosCheckbox.checked = !!perms.chamados;
-        permReservasCheckbox.checked = !!perms.reservas;
-        permMasterTiCheckbox.checked = !!perms.masterTi;
-        permAdminCheckbox.checked = !!perms.adminUsuarios;
-        permFinanceiroCheckbox.checked = !!perms.financeiro;
-        permEstoqueCheckbox.checked = !!perms.estoque;
-        permRelatoriosCheckbox.checked = !!perms.relatorios;
-        permIntegracoesCheckbox.checked = !!perms.integracoes;
-        permMonitoramentoCheckbox.checked = !!perms.monitoramento;
-
-        salvarBtn.textContent = "Atualizar";
-        setFormMessage("Editando usuário...");
-      }
-
-      // EXCLUIR
-      if (btn.classList.contains("delete-user")) {
-        const id = btn.dataset.id;
-
-        if (!confirm("Excluir este usuário?")) return;
-
-        try {
-          const resp = await fetch(
-            `${BACKEND_BASE_URL}/admin/usuarios/${id}`,
-            {
-              method: "DELETE",
-              headers: { Authorization: "Bearer " + getToken() },
-            }
-          );
-
-          const data = await resp.json().catch(() => ({}));
-
-          if (!resp.ok) {
-            console.error("Erro excluir:", data);
-            setFormMessage(data.error || "Erro ao excluir usuário.", true);
-          } else {
-            setFormMessage("Usuário excluído.");
-            await carregarUsuarios();
-          }
-        } catch (err) {
-          console.error(err);
-          setFormMessage("Erro ao excluir usuário.", true);
-        }
-      }
-    });
-
-    // Toggle lote direto na tabela
-    usersTableBody.addEventListener("change", async (e) => {
-      const input = e.target;
-      if (!input.classList.contains("toggle-lote")) return;
-
-      const id = input.dataset.id;
-      const novoValor = !!input.checked;
-
-      try {
-        const resp = await fetch(`${BACKEND_BASE_URL}/admin/usuarios/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: "Bearer " + getToken(),
-          },
-          body: JSON.stringify({ pode_lote: novoValor }),
-        });
-
-        const data = await resp.json().catch(() => ({}));
-
-        if (!resp.ok) {
-          console.error("Erro atualizar toggle:", data);
-          setFormMessage(data.error || "Erro ao atualizar permissão.", true);
-          await carregarUsuarios();
-        } else {
-          await carregarUsuarios();
-        }
-      } catch (err) {
-        console.error(err);
-        setFormMessage("Erro ao atualizar permissão de lote.", true);
-        await carregarUsuarios();
-      }
-    });
-
-    // SELECT CUSTOMIZADO
-    const selectRole = document.getElementById("selectRole");
-    const selectDisplay = selectRole.querySelector(".custom-select-display");
-    const selectList = selectRole.querySelector(".custom-select-list");
-    const selectText = document.getElementById("selectRoleText");
-    const realSelect = document.getElementById("role");
-
-    selectDisplay.addEventListener("click", () => {
-      const visible = selectList.style.display === "block";
-      selectList.style.display = visible ? "none" : "block";
-    });
-
-    selectList.querySelectorAll(".custom-select-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        const val = item.dataset.value;
-
-        realSelect.value = val;
-        selectText.textContent = item.textContent;
-
-        selectList.style.display = "none";
-      });
-    });
-
-    // Fecha select ao clicar fora
-    document.addEventListener("click", (e) => {
-      if (!selectRole.contains(e.target)) {
-        selectList.style.display = "none";
-      }
-    });
-
-    /* ----------------------------------
-      INICIALIZAR
-    ---------------------------------- */
-
-    document.addEventListener("DOMContentLoaded", () => {
-      carregarUsuarios();
-    });
-  </script>
+  <!-- ✅ TODO o JS agora fica em admin.js -->
+  <script src="admin.js"></script>
 </body>
 
 </html>

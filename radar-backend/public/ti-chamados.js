@@ -20,18 +20,27 @@ function getToken() {
 async function apiFetch(path, options = {}) {
   const token = getToken();
   if (!token) {
-    alert("Sessão expirada. Faça login novamente.");
     window.location.href = "login.html";
-    throw new Error("Sem token");
+    return;
   }
 
-  const headers = Object.assign({}, options.headers || {}, {
+  const isFormData = options.isFormData === true;
+
+  const baseHeaders = {
     Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-  });
+  };
+
+  const headers = isFormData
+    ? Object.assign({}, options.headers || {}, baseHeaders)
+    : Object.assign({}, options.headers || {}, baseHeaders, {
+        "Content-Type": "application/json",
+      });
+
+  // não mandar a flag pro fetch
+  const { isFormData: _ignore, ...restOptions } = options;
 
   const resp = await fetch(`${BACKEND_BASE_URL}${path}`, {
-    ...options,
+    ...restOptions,
     headers,
   });
 
@@ -220,33 +229,54 @@ async function handleCriarTicket(e) {
   e.preventDefault();
   if (!formEl) return;
 
-  const payload = {
-    tipo: (typeSelect?.value || "incident").toLowerCase(),
-    categoria: categorySelect?.value || "-----",
-    urgencia: (urgencySelect?.value || "medium").toLowerCase(),
-    titulo: titleInput?.value || "",
-    descricao: descTextarea?.value || "",
-  };
+  const titulo = titleInput?.value || "";
+  const descricao = descTextarea?.value || "";
+  const tipo = (typeSelect?.value || "incident").toLowerCase();
+  const categoria = categorySelect?.value || "-----";
+  const urgencia = (urgencySelect?.value || "medium").toLowerCase();
 
-  console.log("Payload enviado para /ti/chamados:", payload);
-
-  if (!payload.titulo.trim()) {
+  if (!titulo.trim()) {
     showInlineStatus("ticketMsg", "error", "Informe um título para o chamado.");
     return;
   }
 
   try {
     showInlineStatus("ticketMsg", "ok", "Enviando chamado...");
+
+    // ----- MONTA O FORM-DATA (texto + arquivos) -----
+    const formData = new FormData();
+    formData.append("titulo", titulo.trim());
+    formData.append("descricao", descricao);
+    formData.append("tipo", tipo);
+    formData.append("categoria", categoria);
+    formData.append("urgencia", urgencia);
+
+    if (fileInput && fileInput.files && fileInput.files.length > 0) {
+      for (let i = 0; i < fileInput.files.length; i++) {
+        formData.append("anexos", fileInput.files[i]); // << nome do campo igual ao backend
+      }
+    }
+
+    // usa isFormData pra NÃO forçar Content-Type JSON
     await apiFetch("/ti/chamados", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: formData,
+      isFormData: true,
     });
 
+    // ----- LIMPA FORMULÁRIO -----
     if (titleInput) titleInput.value = "";
     if (descTextarea) descTextarea.value = "";
     if (categorySelect) categorySelect.value = "-----";
-    if (typeSelect) typeSelect.value = "Incident";
-    if (urgencySelect) urgencySelect.value = "Medium";
+    if (typeSelect) typeSelect.value = "incident";
+    if (urgencySelect) urgencySelect.value = "medium";
+
+    if (fileInput) {
+      fileInput.value = "";
+    }
+    if (fileNameSpan) {
+      fileNameSpan.textContent = "Nenhum arquivo escolhido";
+    }
 
     showInlineStatus("ticketMsg", "ok", "Chamado criado com sucesso!");
 

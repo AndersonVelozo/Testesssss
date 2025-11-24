@@ -1,108 +1,225 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <title>Login - RADAR</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="container" style="max-width: 420px">
-      <h1>Login</h1>
-      <p class="subtitle">
-        Acesso restrito. Somente usuários cadastrados pelo administrador.
-      </p>
 
-      <label for="email">E-mail</label>
-      <input id="email" type="email" placeholder="voce@empresa.com" />
+<head>
+  <meta charset="utf-8" />
+  <title>Login - RADAR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-      <label for="senha" style="margin-top: 12px">Senha</label>
-      <input id="senha" type="password" placeholder="********" />
+  <style>
+    /* =============================
+                GLOBAL
+      ============================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-      <div class="btn-row" style="margin-top: 16px">
-        <button id="loginBtn" class="btn-primary" type="button">Entrar</button>
-      </div>
+    body {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: "Segoe UI", sans-serif;
+      background: url('./img/quem-pode-se-habilitar-no-radar-descubra-agora-mesmo.webp') no-repeat center center / cover;
+      position: relative;
+      overflow: hidden;
+    }
 
-      <div id="loginMsg" class="progress-text"></div>
-    </div>
+    /* Overlay escuro suave */
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+    }
 
-    <script>
-      // === CONFIG DO BACKEND (LOCAL x PRODUÇÃO) ===
-      const isLocalHost =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1";
+    /* =============================
+                CONTAINER
+      ============================== */
+    .container {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      padding: 32px;
+      border-radius: 18px;
+      background: rgba(17, 25, 40, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+      color: #e2e8f0;
+      animation: fadeIn 0.8s ease;
+    }
 
-      const BACKEND_BASE_URL = isLocalHost
-        ? "http://localhost:3000"
-        : "https://testesssss-production.up.railway.app";
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
 
-      const emailInput = document.getElementById("email");
-      const senhaInput = document.getElementById("senha");
-      const loginBtn = document.getElementById("loginBtn");
-      const loginMsg = document.getElementById("loginMsg");
+      to {
+        opacity: 1;
+      }
+    }
 
-      async function fazerLogin() {
-        const email = emailInput.value.trim();
-        const senha = senhaInput.value.trim();
+    .container h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: #fff;
+    }
 
-        if (!email || !senha) {
-          loginMsg.textContent = "Informe e-mail e senha.";
+    .subtitle {
+      font-size: 14px;
+      margin-bottom: 25px;
+      opacity: 0.7;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      color: #fff;
+      outline: none;
+      transition: 0.25s;
+    }
+
+    input:focus {
+      border-color: #3b82f6;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* =============================
+                BOTÃO
+      ============================== */
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #005eff, #1d4ed8);
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      transition: 0.25s;
+      box-shadow: 0 0 10px rgba(0, 102, 255, 0.4);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 20px rgba(0, 102, 255, 0.7);
+      transform: translateY(-2px);
+    }
+
+    #loginMsg {
+      margin-top: 12px;
+      font-size: 14px;
+      color: #60a5fa;
+      height: 20px;
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        margin: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Login</h1>
+    <p class="subtitle">
+      Acesso restrito. Somente usuários cadastrados pelo administrador.
+    </p>
+
+    <label for="email">E-mail</label>
+    <input id="email" type="email" placeholder="voce@empresa.com" />
+
+    <label for="senha" style="margin-top: 12px">Senha</label>
+    <input id="senha" type="password" placeholder="********" />
+
+    <button id="loginBtn" class="btn-primary" style="margin-top: 18px">
+      Entrar
+    </button>
+
+    <div id="loginMsg"></div>
+  </div>
+
+  <script>
+    const isLocalHost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+
+    const BACKEND_BASE_URL = isLocalHost
+      ? "http://localhost:3000"
+      : "https://testesssss-production.up.railway.app";
+
+    const emailInput = document.getElementById("email");
+    const senhaInput = document.getElementById("senha");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginMsg = document.getElementById("loginMsg");
+
+    async function fazerLogin() {
+      const email = emailInput.value.trim();
+      const senha = senhaInput.value.trim();
+
+      if (!email || !senha) {
+        loginMsg.textContent = "Informe e-mail e senha.";
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginMsg.textContent = "Autenticando...";
+
+      try {
+        const resp = await fetch(`${BACKEND_BASE_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, senha }),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({}));
+          loginMsg.textContent = err.error || "Usuário ou senha inválidos.";
+          loginBtn.disabled = false;
           return;
         }
 
-        loginBtn.disabled = true;
-        loginMsg.textContent = "Autenticando...";
+        const data = await resp.json();
 
-        try {
-          const resp = await fetch(`${BACKEND_BASE_URL}/auth/login`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ email, senha }),
-          });
+        localStorage.setItem("radar_token", data.token);
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("authToken", data.token);
 
-          if (!resp.ok) {
-            const err = await resp.json().catch(() => ({}));
-            loginMsg.textContent = err.error || "Usuário ou senha inválidos.";
-            loginBtn.disabled = false;
-            return;
-          }
+        loginMsg.textContent =
+          "Login realizado com sucesso! Redirecionando...";
 
-          const data = await resp.json();
-          const usuario = data.usuario || {};
-
-          // 🔐 salva token em todos os nomes usados no front
-          localStorage.setItem("radar_token", data.token);
-          localStorage.setItem("token", data.token);
-          localStorage.setItem("authToken", data.token);
-
-          // informações extras do usuário (se quiser usar em telas)
-          localStorage.setItem("usuarioNome", usuario.nome || "");
-          localStorage.setItem("usuarioRole", usuario.role || "user");
-
-          loginMsg.textContent =
-            "Login realizado com sucesso! Redirecionando...";
-
-          // 🔀 após login, sempre vai para o portal com os cards
-          setTimeout(() => {
-            window.location.href = "home.html";
-          }, 800);
-        } catch (e) {
-          console.error(e);
-          loginMsg.textContent = "Erro ao conectar com o servidor.";
-          loginBtn.disabled = false;
-        }
+        setTimeout(() => {
+          window.location.href = "home.html";
+        }, 800);
+      } catch (e) {
+        console.error(e);
+        loginMsg.textContent = "Erro ao conectar com o servidor.";
+        loginBtn.disabled = false;
       }
+    }
 
-      loginBtn.addEventListener("click", fazerLogin);
+    loginBtn.addEventListener("click", fazerLogin);
+    senhaInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") fazerLogin();
+    });
+    emailInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") fazerLogin();
+    });
+  </script>
+</body>
 
-      senhaInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") fazerLogin();
-      });
-      emailInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") fazerLogin();
-      });
-    </script>
-  </body>
 </html>

@@ -5,7 +5,8 @@ const isLocalHostMaster =
 
 const BACKEND_BASE_URL_MASTER = isLocalHostMaster
   ? "http://localhost:3000"
-  : "https://radar-backend-omjv.onrender.com"; // URL do backend no Render
+  : "https://testesssss-production.up.railway.app";
+// ou : window.location.origin; se o backend for o mesmo domínio do front
 
 function getTokenMaster() {
   return (
@@ -76,6 +77,7 @@ const detailDescricaoEl = document.getElementById("detailDescricao");
 const detailTimelineEl = document.getElementById("detailTimeline");
 const detailComentarioEl = document.getElementById("detailComentario");
 const detailSendCommentBtn = document.getElementById("detailSendComment");
+const detailArquivosEl = document.getElementById("detailArquivos");
 
 // NOVOS elementos para mudar status dentro do modal
 const detailStatusSelect = document.getElementById("detailStatusSelect");
@@ -120,6 +122,20 @@ function urgenciaLabel(u) {
   if (s === "high") return "Alta";
   if (s === "critical") return "Crítica";
   return u || "-";
+}
+
+function formatarTamanhoBytes(bytes) {
+  if (!bytes && bytes !== 0) return "";
+  const unidades = ["B", "KB", "MB", "GB"];
+  let valor = bytes;
+  let idx = 0;
+
+  while (valor >= 1024 && idx < unidades.length - 1) {
+    valor /= 1024;
+    idx++;
+  }
+
+  return valor.toFixed(1) + " " + unidades[idx];
 }
 
 // ====== CARREGAR DADOS DO USUÁRIO (auth/me) ======
@@ -324,7 +340,7 @@ function fecharOverlay() {
 async function abrirDetalheChamado(id) {
   try {
     const resp = await apiFetchMaster(`/ti/master/chamados/${id}`);
-    const { chamado, atividades = [] } = resp;
+    const { chamado, atividades = [], arquivos = [] } = resp;
 
     detalheChamadoAtualId = chamado.id;
 
@@ -354,6 +370,35 @@ async function abrirDetalheChamado(id) {
       detailStatusSelect.value = chamado.status || "new";
     }
 
+    // ====== NOVO: RENDERIZA ANEXOS ======
+    if (detailArquivosEl) {
+      if (!arquivos.length) {
+        detailArquivosEl.innerHTML =
+          '<li><span class="master-files-empty">Nenhum anexo.</span></li>';
+      } else {
+        detailArquivosEl.innerHTML = arquivos
+          .map((f) => {
+            const url = `${BACKEND_BASE_URL_MASTER}${f.url}`;
+            const tamanhoFmt = formatarTamanhoBytes(f.tamanho);
+            const dataFmt = formatarDataHoraBRMaster(f.criadoEm);
+            return `
+              <li class="master-file-item">
+                <a href="${url}" target="_blank" rel="noopener noreferrer">
+                  📎 ${f.nomeOriginal}
+                </a>
+                <span class="master-file-meta">
+                  ${tamanhoFmt ? " • " + tamanhoFmt : ""}${
+              dataFmt ? " • " + dataFmt : ""
+            }
+                </span>
+              </li>
+            `;
+          })
+          .join("");
+      }
+    }
+
+    // ====== HISTÓRICO ======
     if (detailTimelineEl) {
       if (!atividades.length) {
         detailTimelineEl.innerHTML = `

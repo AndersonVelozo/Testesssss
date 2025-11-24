@@ -6,8 +6,31 @@ const fetch = require("node-fetch"); // versão 2 (CommonJS)
 const { Pool } = require("pg");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
 
 const app = express();
+
+// ========== UPLOADS (ANEXOS DE CHAMADOS) ==========
+const uploadDir = path.join(__dirname, "uploads");
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname || "");
+    cb(null, unique + ext);
+  },
+});
+
+const upload = multer({ storage });
+
+// rota estática pra baixar os arquivos
+app.use("/uploads", express.static(uploadDir));
 
 // ========== CONFIG GERAL ==========
 const PORT = process.env.PORT || 3000;
@@ -24,7 +47,7 @@ app.get("/", (req, res) => {
 // Arquivos estáticos (CSS, JS, outras páginas)
 app.use(express.static(path.join(__dirname, "public")));
 
-// ========== POSTGRES (Render) ==========
+// ========== POSTGRES (Render / Railway) ==========
 const isRender = !!process.env.RENDER; // o Render seta isso automaticamente
 console.log("Iniciando Pool Postgres. RENDER =", isRender);
 
@@ -37,21 +60,21 @@ const pool = new Pool({
 async function initDb() {
   const sql = `
     CREATE TABLE IF NOT EXISTS consultas_radar (
-      id                BIGSERIAL PRIMARY KEY,
-      cnpj              VARCHAR(14) NOT NULL,
-      data_consulta     DATE        NOT NULL,
-      contribuinte      TEXT,
-      situacao          TEXT,
-      data_situacao     TEXT,
-      submodalidade     TEXT,
-      razao_social      TEXT,
-      nome_fantasia     TEXT,
-      municipio         TEXT,
-      uf                VARCHAR(2),
-      data_constituicao TEXT,
-      regime_tributario TEXT,
-      data_opcao_simples TEXT,
-      capital_social    TEXT,
+      id                  BIGSERIAL PRIMARY KEY,
+      cnpj                VARCHAR(14) NOT NULL,
+      data_consulta       DATE        NOT NULL,
+      contribuinte        TEXT,
+      situacao            TEXT,
+      data_situacao       TEXT,
+      submodalidade       TEXT,
+      razao_social        TEXT,
+      nome_fantasia       TEXT,
+      municipio           TEXT,
+      uf                  VARCHAR(2),
+      data_constituicao   TEXT,
+      regime_tributario   TEXT,
+      data_opcao_simples  TEXT,
+      capital_social      TEXT,
       exportado_por       TEXT,
       consultado_por_id   BIGINT,
       consultado_por_nome TEXT,
@@ -63,14 +86,24 @@ async function initDb() {
       ON consultas_radar (cnpj, data_consulta DESC);
 
     CREATE TABLE IF NOT EXISTS usuarios (
-      id           BIGSERIAL PRIMARY KEY,
-      nome         TEXT         NOT NULL,
-      email        VARCHAR(120) NOT NULL UNIQUE,
-      senha_hash   TEXT         NOT NULL,
-      role         VARCHAR(20)  NOT NULL DEFAULT 'user',
-      ativo        BOOLEAN      NOT NULL DEFAULT TRUE,
-      criado_em    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+      id            BIGSERIAL PRIMARY KEY,
+      nome          TEXT         NOT NULL,
+      email         VARCHAR(120) NOT NULL UNIQUE,
+      senha_hash    TEXT         NOT NULL,
+      role          VARCHAR(20)  NOT NULL DEFAULT 'user',
+      ativo         BOOLEAN      NOT NULL DEFAULT TRUE,
+      pode_lote     BOOLEAN      NOT NULL DEFAULT TRUE,
+      can_radar     BOOLEAN      NOT NULL DEFAULT TRUE,
+      can_chamados  BOOLEAN      NOT NULL DEFAULT TRUE,
+      can_chatbot   BOOLEAN      NOT NULL DEFAULT FALSE,
+      can_admin     BOOLEAN      NOT NULL DEFAULT FALSE,
+      can_master_ti BOOLEAN      NOT NULL DEFAULT FALSE,
+      criado_em     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
     );
+
+    -- garante coluna nova em bancos antigos
+    ALTER TABLE usuarios
+      ADD COLUMN IF NOT EXISTS can_chatbot BOOLEAN NOT NULL DEFAULT FALSE;
 
     CREATE TABLE IF NOT EXISTS consultas_log (
       id           BIGSERIAL PRIMARY KEY,
@@ -82,30 +115,14 @@ async function initDb() {
       mensagem     TEXT
     );
 
-    ALTER TABLE usuarios
-      ADD COLUMN IF NOT EXISTS pode_lote BOOLEAN NOT NULL DEFAULT TRUE;
-
-    -- novas colunas de permissão
-    ALTER TABLE usuarios
-      ADD COLUMN IF NOT EXISTS can_radar BOOLEAN NOT NULL DEFAULT TRUE;
-
-    ALTER TABLE usuarios
-      ADD COLUMN IF NOT EXISTS can_chamados BOOLEAN NOT NULL DEFAULT TRUE;
-
-    ALTER TABLE usuarios
-      ADD COLUMN IF NOT EXISTS can_admin BOOLEAN NOT NULL DEFAULT FALSE;
-
-    ALTER TABLE usuarios
-      ADD COLUMN IF NOT EXISTS can_master_ti BOOLEAN NOT NULL DEFAULT FALSE;
-
-      -- ================= CHAMADOS TI =================
+    -- ================= CHAMADOS TI =================
     CREATE TABLE IF NOT EXISTS chamados_ti (
       id                BIGSERIAL PRIMARY KEY,
       titulo            TEXT         NOT NULL,
       descricao         TEXT,
-      tipo              VARCHAR(30),      -- Incident, Service Request...
-      categoria         VARCHAR(50),      -- Hardware, Software, Rede...
-      urgencia          VARCHAR(20),      -- Low, Medium, High, Critical
+      tipo              VARCHAR(30),
+      categoria         VARCHAR(50),
+      urgencia          VARCHAR(20),
       status            VARCHAR(40) NOT NULL DEFAULT 'new',
       solicitante_id    BIGINT      NOT NULL REFERENCES usuarios(id),
       solicitante_nome  TEXT        NOT NULL,
@@ -125,7 +142,7 @@ async function initDb() {
     CREATE TABLE IF NOT EXISTS chamados_ti_atividade (
       id                BIGSERIAL PRIMARY KEY,
       chamado_id        BIGINT      NOT NULL REFERENCES chamados_ti(id) ON DELETE CASCADE,
-      tipo              VARCHAR(30) NOT NULL,  -- create, status_change, comment...
+      tipo              VARCHAR(30) NOT NULL,
       descricao         TEXT        NOT NULL,
       criado_por_id     BIGINT      NOT NULL REFERENCES usuarios(id),
       criado_por_nome   TEXT        NOT NULL,
@@ -135,11 +152,11 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_chamados_ti_atividade_chamado
       ON chamados_ti_atividade (chamado_id);
 
-          CREATE TABLE IF NOT EXISTS ti_reservas (
+    CREATE TABLE IF NOT EXISTS ti_reservas (
       id          BIGSERIAL PRIMARY KEY,
       usuario_id  BIGINT      NOT NULL REFERENCES usuarios(id),
       data        DATE        NOT NULL,
-      periodo     VARCHAR(20) NOT NULL, -- manha, tarde, dia_todo
+      periodo     VARCHAR(20) NOT NULL,
       motivo      TEXT,
       criado_em   TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -147,21 +164,8 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_ti_reservas_usuario_data
       ON ti_reservas (usuario_id, data);
 
-    -- garante colunas novas mesmo em bancos antigos
-    ALTER TABLE consultas_radar
-      ADD COLUMN IF NOT EXISTS exportado_por TEXT;
-
-    ALTER TABLE consultas_radar
-      ADD COLUMN IF NOT EXISTS consultado_por_id BIGINT;
-
-    ALTER TABLE consultas_radar
-      ADD COLUMN IF NOT EXISTS consultado_por_nome TEXT;
-
-    ALTER TABLE consultas_radar
-      ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW();
-
-    ALTER TABLE consultas_radar
-      ADD COLUMN IF NOT EXISTS dados_incompletos BOOLEAN NOT NULL DEFAULT FALSE;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_ti_reservas_unique_usuario_data_periodo
+      ON ti_reservas (usuario_id, data, periodo);
 
     -- 🔧 patch: se existir coluna 'senha' antiga NOT NULL, tornamos NULL
     DO $$
@@ -178,6 +182,21 @@ async function initDb() {
         END;
       END IF;
     END $$;
+
+
+     CREATE TABLE IF NOT EXISTS chamados_ti_arquivos (
+      id             BIGSERIAL PRIMARY KEY,
+      chamado_id     BIGINT      NOT NULL REFERENCES chamados_ti(id) ON DELETE CASCADE,
+      nome_original  TEXT        NOT NULL,
+      nome_arquivo   TEXT        NOT NULL,
+      mimetype       TEXT,
+      tamanho        BIGINT,
+      criado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_chamados_ti_arquivos_chamado
+      ON chamados_ti_arquivos (chamado_id);
+
   `;
 
   await pool.query(sql);
@@ -201,14 +220,14 @@ async function seedAdminUser() {
       const role = "admin";
 
       const sql = `
-        INSERT INTO usuarios
-          (nome, email, senha_hash, role, ativo, pode_lote,
-           can_radar, can_chamados, can_admin, can_master_ti)
-        VALUES
-          ($1,   $2,    $3,         $4,  TRUE,  TRUE,
-           TRUE, TRUE,  TRUE,       FALSE)
-        ON CONFLICT (email) DO NOTHING;
-      `;
+  INSERT INTO usuarios
+    (nome, email, senha_hash, role, ativo, pode_lote,
+     can_radar, can_chamados, can_chatbot, can_admin, can_master_ti)
+  VALUES
+    ($1,   $2,    $3,         $4,  TRUE,  TRUE,
+     TRUE, TRUE,  TRUE,       TRUE, FALSE)
+  ON CONFLICT (email) DO NOTHING;
+`;
 
       await pool.query(sql, [nome, email, senhaEmTexto, role]);
       console.log("⚙ Usuário ADMIN criado:");
@@ -258,7 +277,6 @@ async function salvarConsulta(cnpjLimpo, dados, usuario) {
     usuarioNome,
   ];
 
-  // 1º tenta atualizar registro do MESMO DIA
   const sqlUpdate = `
     UPDATE consultas_radar SET
       contribuinte        = $2,
@@ -286,7 +304,6 @@ async function salvarConsulta(cnpjLimpo, dados, usuario) {
     return updateResult.rows[0];
   }
 
-  // 2º se não tinha registro do dia → insere um novo
   const sqlInsert = `
     INSERT INTO consultas_radar (
       cnpj,
@@ -427,15 +444,26 @@ async function tentarComRetry(fn, descricao, maxTentativas = 3, delayMs = 800) {
   return { ok: false, erro: ultimoErro };
 }
 
+// helper para normalizar booleans vindos do front
+function parseBool(raw, defaultValue = false) {
+  if (raw === undefined || raw === null) return defaultValue;
+  if (typeof raw === "boolean") return raw;
+  const txt = String(raw).trim().toLowerCase();
+  if (["false", "0", "no", "off", "n", "nao", "não"].includes(txt))
+    return false;
+  if (["true", "1", "yes", "on", "y", "sim", "s"].includes(txt)) return true;
+  return defaultValue;
+}
+
 /// ========== MIDDLEWARES ==========
 
 // body JSON
 app.use(express.json());
 
-// CORS ABERTO (pra resolver de vez o problema entre Render x Render)
+// CORS ABERTO
 app.use(
   cors({
-    origin: true, // aceita qualquer origem
+    origin: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -475,7 +503,8 @@ function authMiddlewareAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: "Não autenticado" });
   }
-  if (req.user.role !== "admin") {
+  const perms = req.user.permissions || {};
+  if (req.user.role !== "admin" && !perms.admin) {
     return res.status(403).json({ error: "Acesso restrito ao administrador" });
   }
   next();
@@ -490,9 +519,9 @@ function requireChamadosPermission(req, res, next) {
   const perms = req.user.permissions || {};
 
   if (
-    perms.chamados || // can_chamados = true
-    perms.admin || // can_admin = true
-    perms.masterTi || // can_master_ti = true
+    perms.chamados ||
+    perms.admin ||
+    perms.masterTi ||
     req.user.role === "admin"
   ) {
     return next();
@@ -511,11 +540,7 @@ function requireMasterTiPermission(req, res, next) {
 
   const perms = req.user.permissions || {};
 
-  if (
-    perms.masterTi || // can_master_ti = true
-    perms.admin || // can_admin = true
-    req.user.role === "admin"
-  ) {
+  if (perms.masterTi || perms.admin || req.user.role === "admin") {
     return next();
   }
 
@@ -642,7 +667,7 @@ async function consultaRadarAPI(cnpjLimpo) {
   };
 }
 
-// ================= ENDPOINTS AUXILIARES (sem auth, se quiser manter) =================
+// ================= ENDPOINTS AUXILIARES =================
 
 app.get("/consulta-receitaws", async (req, res) => {
   try {
@@ -673,46 +698,36 @@ app.get("/consulta-radar", async (req, res) => {
 });
 
 // ================== AUTH ==================
-// Login em modo SENHA SIMPLES (SEM BCRYPT)
 app.post("/auth/login", async (req, res) => {
   try {
     const { email, senha } = req.body || {};
-
-    console.log(">>> Tentativa login");
-    console.log("Email:", email);
-    console.log("Senha recebida:", senha);
 
     if (!email || !senha) {
       return res.status(400).json({ error: "Informe email e senha." });
     }
 
     const sql = `
-      SELECT
-        id, nome, email, senha_hash, role, ativo, pode_lote,
-        can_radar, can_chamados, can_admin, can_master_ti
-      FROM usuarios
-      WHERE email = $1 AND ativo = TRUE
-    `;
+  SELECT
+    id, nome, email, senha_hash, role, ativo, pode_lote,
+    can_radar, can_chamados, can_chatbot, can_admin, can_master_ti
+  FROM usuarios
+  WHERE email = $1 AND ativo = TRUE
+`;
     const { rows } = await pool.query(sql, [email]);
     const user = rows[0];
 
     if (!user) {
-      console.log("Usuário não encontrado no banco");
       return res.status(401).json({ error: "Usuário ou senha inválidos." });
     }
-
-    console.log("Senha no banco:", user.senha_hash);
 
     if (String(user.senha_hash).trim() !== String(senha).trim()) {
-      console.log("Senha incorreta!");
       return res.status(401).json({ error: "Usuário ou senha inválidos." });
     }
-
-    console.log(">>> LOGIN OK para:", user.email);
 
     const permissions = {
       radar: !!user.can_radar,
       chamados: !!user.can_chamados,
+      chatbot: !!user.can_chatbot,
       admin: !!user.can_admin,
       masterTi: !!user.can_master_ti,
     };
@@ -724,7 +739,7 @@ app.post("/auth/login", async (req, res) => {
         email: user.email,
         role: user.role,
         pode_lote: user.pode_lote,
-        permissions, // vai junto no payload do JWT
+        permissions,
       },
       JWT_SECRET,
       { expiresIn: "60h" }
@@ -748,7 +763,6 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-// endpoint só pra testar token
 app.get("/auth/me", authMiddleware, (req, res) => {
   res.json({ usuario: req.user });
 });
@@ -763,14 +777,23 @@ app.get(
   async (req, res) => {
     try {
       const sql = `
-        SELECT
-          id, nome, email, role, ativo, pode_lote,
-          can_radar, can_chamados, can_admin, can_master_ti,
-          criado_em
-        FROM usuarios
-        ORDER BY id ASC;
-      `;
+  SELECT
+      id,
+      nome,
+      email,
+      role,
+      ativo,
+      pode_lote,
+      can_radar,
+      can_chamados,
+      can_chatbot,
+      can_admin,
+      can_master_ti
+  FROM usuarios
+  ORDER BY id DESC;
+`;
       const { rows } = await pool.query(sql);
+      console.log("GET /admin/usuarios - total registros:", rows.length);
       return res.json(rows);
     } catch (err) {
       console.error("Erro GET /admin/usuarios:", err);
@@ -779,7 +802,7 @@ app.get(
   }
 );
 
-// Criar usuário (somente ADM) – versão robusta
+// Criar usuário (ADM)
 app.post(
   "/admin/usuarios",
   authMiddleware,
@@ -802,6 +825,8 @@ app.post(
         canRadar,
         can_chamados,
         canChamados,
+        can_chatbot,
+        canChatbot,
         can_admin,
         canAdmin,
         can_master_ti,
@@ -825,52 +850,26 @@ app.post(
           ? "admin"
           : "user";
 
-      const ativoRaw = ativo ?? status ?? true;
-      const ativoFinal =
-        typeof ativoRaw === "boolean"
-          ? ativoRaw
-          : String(ativoRaw).toLowerCase() !== "false";
+      const ativoFinal = parseBool(ativo ?? status, true);
+      const podeLoteFinal = parseBool(pode_lote ?? podeLote, true);
 
-      const podeLoteRaw = pode_lote ?? podeLote ?? true;
-      const podeLoteFinal =
-        typeof podeLoteRaw === "boolean"
-          ? podeLoteRaw
-          : String(podeLoteRaw).toLowerCase() !== "false";
-
-      const canRadarRaw = can_radar ?? canRadar ?? true;
-      const canRadarFinal =
-        typeof canRadarRaw === "boolean"
-          ? canRadarRaw
-          : String(canRadarRaw).toLowerCase() !== "false";
-
-      const canChamadosRaw = can_chamados ?? canChamados ?? true;
-      const canChamadosFinal =
-        typeof canChamadosRaw === "boolean"
-          ? canChamadosRaw
-          : String(canChamadosRaw).toLowerCase() !== "false";
-
-      const canAdminRaw = can_admin ?? canAdmin ?? false;
-      const canAdminFinal =
-        typeof canAdminRaw === "boolean"
-          ? canAdminRaw
-          : String(canAdminRaw).toLowerCase() !== "false";
-
-      const canMasterTiRaw = can_master_ti ?? canMasterTi ?? false;
-      const canMasterTiFinal =
-        typeof canMasterTiRaw === "boolean"
-          ? canMasterTiRaw
-          : String(canMasterTiRaw).toLowerCase() !== "false";
+      // permissões de módulo – default false
+      const canRadarFinal = parseBool(can_radar ?? canRadar, false);
+      const canChamadosFinal = parseBool(can_chamados ?? canChamados, false);
+      const canChatbotFinal = parseBool(can_chatbot ?? canChatbot, false);
+      const canAdminFinal = parseBool(can_admin ?? canAdmin, false);
+      const canMasterTiFinal = parseBool(can_master_ti ?? canMasterTi, false);
 
       const sql = `
         INSERT INTO usuarios
           (nome, email, senha_hash, role, ativo, pode_lote,
-           can_radar, can_chamados, can_admin, can_master_ti)
+           can_radar, can_chamados, can_chatbot, can_admin, can_master_ti)
         VALUES
           ($1,   $2,    $3,         $4,   $5,    $6,
-           $7,       $8,           $9,       $10)
+           $7,       $8,           $9,        $10,      $11)
         RETURNING
           id, nome, email, role, ativo, pode_lote,
-          can_radar, can_chamados, can_admin, can_master_ti,
+          can_radar, can_chamados, can_chatbot, can_admin, can_master_ti,
           criado_em;
       `;
 
@@ -883,6 +882,7 @@ app.post(
         podeLoteFinal,
         canRadarFinal,
         canChamadosFinal,
+        canChatbotFinal,
         canAdminFinal,
         canMasterTiFinal,
       ]);
@@ -903,7 +903,6 @@ app.post(
   }
 );
 
-// Atualizar usuário (somente ADM)
 app.put(
   "/admin/usuarios/:id",
   authMiddleware,
@@ -929,6 +928,8 @@ app.put(
         canRadar,
         can_chamados,
         canChamados,
+        can_chatbot,
+        canChatbot,
         can_admin,
         canAdmin,
         can_master_ti,
@@ -965,56 +966,37 @@ app.put(
         valores.push(roleFinal);
       }
       if (ativo !== undefined || status !== undefined) {
-        const ativoRaw = ativo ?? status;
-        const ativoFinal =
-          typeof ativoRaw === "boolean"
-            ? ativoRaw
-            : String(ativoRaw).toLowerCase() !== "false";
+        const ativoFinal = parseBool(ativo ?? status, true);
         campos.push(`ativo = $${idx++}`);
         valores.push(ativoFinal);
       }
       if (pode_lote !== undefined || podeLote !== undefined) {
-        const podeLoteRaw = pode_lote ?? podeLote;
-        const podeLoteFinal =
-          typeof podeLoteRaw === "boolean"
-            ? podeLoteRaw
-            : String(podeLoteRaw).toLowerCase() !== "false";
+        const podeLoteFinal = parseBool(pode_lote ?? podeLote, true);
         campos.push(`pode_lote = $${idx++}`);
         valores.push(podeLoteFinal);
       }
       if (can_radar !== undefined || canRadar !== undefined) {
-        const raw = can_radar ?? canRadar;
-        const val =
-          typeof raw === "boolean"
-            ? raw
-            : String(raw).toLowerCase() !== "false";
+        const val = parseBool(can_radar ?? canRadar, false);
         campos.push(`can_radar = $${idx++}`);
         valores.push(val);
       }
       if (can_chamados !== undefined || canChamados !== undefined) {
-        const raw = can_chamados ?? canChamados;
-        const val =
-          typeof raw === "boolean"
-            ? raw
-            : String(raw).toLowerCase() !== "false";
+        const val = parseBool(can_chamados ?? canChamados, false);
         campos.push(`can_chamados = $${idx++}`);
         valores.push(val);
       }
+      if (can_chatbot !== undefined || canChatbot !== undefined) {
+        const val = parseBool(can_chatbot ?? canChatbot, false);
+        campos.push(`can_chatbot = $${idx++}`);
+        valores.push(val);
+      }
       if (can_admin !== undefined || canAdmin !== undefined) {
-        const raw = can_admin ?? canAdmin;
-        const val =
-          typeof raw === "boolean"
-            ? raw
-            : String(raw).toLowerCase() !== "false";
+        const val = parseBool(can_admin ?? canAdmin, false);
         campos.push(`can_admin = $${idx++}`);
         valores.push(val);
       }
       if (can_master_ti !== undefined || canMasterTi !== undefined) {
-        const raw = can_master_ti ?? canMasterTi;
-        const val =
-          typeof raw === "boolean"
-            ? raw
-            : String(raw).toLowerCase() !== "false";
+        const val = parseBool(can_master_ti ?? canMasterTi, false);
         campos.push(`can_master_ti = $${idx++}`);
         valores.push(val);
       }
@@ -1032,7 +1014,7 @@ app.put(
         WHERE id = $${idx}
         RETURNING
           id, nome, email, role, ativo, pode_lote,
-          can_radar, can_chamados, can_admin, can_master_ti,
+          can_radar, can_chamados, can_chatbot, can_admin, can_master_ti,
           criado_em;
       `;
 
@@ -1056,7 +1038,6 @@ app.put(
   }
 );
 
-// "Excluir" usuário (desativar) – somente ADM
 app.delete(
   "/admin/usuarios/:id",
   authMiddleware,
@@ -1074,7 +1055,7 @@ app.delete(
         WHERE id = $1
         RETURNING
           id, nome, email, role, ativo, pode_lote,
-          can_radar, can_chamados, can_admin, can_master_ti,
+          can_radar, can_chamados, can_chatbot, can_admin, can_master_ti,
           criado_em;
       `;
 
@@ -1583,11 +1564,74 @@ app.get(
   }
 );
 
+app.post(
+  "/ti/reservas",
+  authMiddleware,
+  requireChamadosPermission,
+  async (req, res) => {
+    try {
+      const { data, periodo, motivo } = req.body || {};
+      const userId = req.user.id;
+
+      if (!data) {
+        return res
+          .status(400)
+          .json({ error: "Data da reserva é obrigatória." });
+      }
+
+      const periodoLimpo = (periodo || "dia_todo").toLowerCase();
+      const allowedPeriodos = ["manha", "tarde", "dia_todo"];
+
+      if (!allowedPeriodos.includes(periodoLimpo)) {
+        return res.status(400).json({ error: "Período inválido." });
+      }
+
+      const sql = `
+        INSERT INTO ti_reservas (usuario_id, data, periodo, motivo)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, usuario_id, data, periodo, motivo, criado_em;
+      `;
+
+      try {
+        const { rows } = await pool.query(sql, [
+          userId,
+          data,
+          periodoLimpo,
+          motivo || "",
+        ]);
+
+        const r = rows[0];
+
+        return res.status(201).json({
+          id: r.id,
+          data: r.data,
+          periodo: r.periodo,
+          motivo: r.motivo || "",
+          criado_em: r.criado_em,
+        });
+      } catch (err) {
+        // conflito com índice único (já existe reserva para esse dia/período)
+        if (err.code === "23505") {
+          return res.status(400).json({
+            error:
+              "Você já possui uma reserva para essa data e período. Altere ou exclua a reserva existente.",
+          });
+        }
+        throw err;
+      }
+    } catch (err) {
+      console.error("Erro POST /ti/reservas:", err);
+      return res.status(500).json({ error: "Erro ao registrar reserva." });
+    }
+  }
+);
+
 // Criar chamado TI (Self-Service)
 app.post(
   "/ti/chamados",
   authMiddleware,
   requireChamadosPermission,
+  upload.array("anexos", 5), // <= NOME DO CAMPO DO FORM
   async (req, res) => {
     try {
       const { titulo, descricao, tipo, categoria, urgencia } = req.body || {};
@@ -1654,6 +1698,26 @@ app.post(
       `,
         [chamado.id, "Chamado criado pelo usuário.", userId, userNome]
       );
+
+      // ========= SALVA ANEXOS =========
+      if (Array.isArray(req.files) && req.files.length > 0) {
+        for (const file of req.files) {
+          await pool.query(
+            `
+            INSERT INTO chamados_ti_arquivos
+              (chamado_id, nome_original, nome_arquivo, mimetype, tamanho)
+            VALUES ($1, $2, $3, $4, $5);
+          `,
+            [
+              chamado.id,
+              file.originalname,
+              file.filename,
+              file.mimetype,
+              file.size,
+            ]
+          );
+        }
+      }
 
       return res.status(201).json({
         ...chamado,
@@ -1906,12 +1970,31 @@ app.get(
         criadoEm: a.criado_em,
       }));
 
+      // ====== NOVO: ARQUIVOS DO CHAMADO ======
+      const sqlArquivos = `
+        SELECT id, nome_original, nome_arquivo, mimetype, tamanho, criado_em
+        FROM chamados_ti_arquivos
+        WHERE chamado_id = $1
+        ORDER BY criado_em ASC;
+      `;
+      const { rows: rowsArquivos } = await pool.query(sqlArquivos, [id]);
+
+      const arquivos = rowsArquivos.map((f) => ({
+        id: f.id,
+        nomeOriginal: f.nome_original,
+        url: `/uploads/${f.nome_arquivo}`,
+        mimetype: f.mimetype,
+        tamanho: f.tamanho,
+        criadoEm: f.criado_em,
+      }));
+
       return res.json({
         chamado: {
           ...chamado,
           numero: `#${chamado.id}`,
         },
         atividades,
+        arquivos, // <= devolve para o front
       });
     } catch (err) {
       console.error("Erro GET /ti/master/chamados/:id:", err);
@@ -2028,7 +2111,6 @@ app.get(
   }
 );
 
-// Alterar status de um chamado (Master TI)
 // Alterar status de um chamado (Master TI)
 app.put(
   "/ti/master/chamados/:id/status",

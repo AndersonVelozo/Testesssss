@@ -58,20 +58,19 @@
           </button>
         </article>
 
-        <!-- CARD 3 – RESERVAS (placeholder) -->
-        <article class="home-card" id="cardReservas">
-          <div class="home-card-icon">📅</div>
-          <h2>Reservas de Equipamentos</h2>
+        <!-- CARD 3 – CHAT BOT -->
+        <article class="home-card" id="cardChatBot">
+          <div class="home-card-icon">🤖</div>
+          <h2>CHAT BOT</h2>
           <p>
-            (Em breve) Módulo para reservar notebooks, salas de reunião e
-            outros recursos de TI.
+            (Em breve) Módulo para conversas automatizadas com os clientes.
           </p>
-          <button class="btn-primary home-card-btn" id="btnReservas" disabled>
+          <button class="btn-primary home-card-btn" id="btnChatBot" disabled>
             Em desenvolvimento
           </button>
         </article>
 
-        <!-- CARD 4 – Painel Master TI -->
+        <!-- CARD 5 – Painel Master TI -->
         <article class="home-card" id="cardMasterTi">
           <div class="home-card-icon">🛠️</div>
           <h2>Painel Master TI</h2>
@@ -83,7 +82,7 @@
           </button>
         </article>
 
-        <!-- CARD 5 – Administração de Usuários -->
+        <!-- CARD 6 – Administração de Usuários -->
         <article class="home-card" id="cardAdmin">
           <div class="home-card-icon">👤</div>
           <h2>Administração de Usuários</h2>
@@ -99,35 +98,41 @@
       <!-- LINHA 2 – MÓDULOS EM ANDAMENTO -->
       <section class="row-secondary">
 
-        <article class="home-card card-andamento">
+        <!-- CARD 4 – RESERVAS (placeholder) -->
+        <article class="home-card card-andamento" id="cardReservas">
+          <div class="home-card-icon">📅</div>
+          <h2>Reservas de Equipamentos</h2>
+          <p>
+            (Em breve) Módulo para reservar notebooks, salas de reunião e
+            outros recursos de TI.
+          </p>
+          <button class="btn-secondary home-card-btn" id="btnReservas" disabled>
+            Em andamento
+          </button>
+        </article>
+
+        <article class="home-card card-andamento" id="cardFinanceiro">
           <div class="home-card-icon">🚧</div>
           <h2>Módulo Financeiro</h2>
           <p>Em andamento – controle financeiro e dashboards.</p>
           <button class="btn-secondary home-card-btn" disabled>Em andamento</button>
         </article>
 
-        <article class="home-card card-andamento">
+        <article class="home-card card-andamento" id="cardEstoque">
           <div class="home-card-icon">🚧</div>
           <h2>Módulo de Estoque</h2>
           <p>Em andamento – gestão de estoque e inventário.</p>
           <button class="btn-secondary home-card-btn" disabled>Em andamento</button>
         </article>
 
-        <article class="home-card card-andamento">
-          <div class="home-card-icon">🚧</div>
-          <h2>Relatórios Inteligentes</h2>
-          <p>Em andamento – relatórios automáticos e analytics.</p>
-          <button class="btn-secondary home-card-btn" disabled>Em andamento</button>
-        </article>
-
-        <article class="home-card card-andamento">
+        <article class="home-card card-andamento" id="cardIntegracoes">
           <div class="home-card-icon">🚧</div>
           <h2>Integrações Externas</h2>
           <p>Em andamento – integrações com APIs externas.</p>
           <button class="btn-secondary home-card-btn" disabled>Em andamento</button>
         </article>
 
-        <article class="home-card card-andamento">
+        <article class="home-card card-andamento" id="cardMonitoramento">
           <div class="home-card-icon">🚧</div>
           <h2>Monitoramento em Tempo Real</h2>
           <p>Em andamento – painéis em tempo real para TI.</p>

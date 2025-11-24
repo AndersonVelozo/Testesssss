@@ -5,7 +5,731 @@
   <meta charset="utf-8" />
   <title>Central de Chamados de TI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+
+  <!-- CSS INTERNO -->
+  <style>
+    .ti-ticket-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .ti-ticket-id {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .ti-ticket-date {
+      font-size: 12px;
+      color: #cbd5f5;
+    }
+
+    .ti-ticket-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #e5e7eb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+
+    /* ========================
+          RESET / BASE
+    ========================= */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body.ti-page {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #0f172a 0, #020617 55%, #000 100%);
+      color: #e5e7eb;
+      overflow: hidden;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    /* ========================
+          LAYOUT PRINCIPAL
+    ========================= */
+    .ti-layout {
+      display: flex;
+      height: 100vh;
+      padding: 16px;
+      gap: 16px;
+    }
+
+    /* ========================
+          SIDEBAR
+    ========================= */
+    .ti-sidebar {
+      width: 260px;
+      background: linear-gradient(160deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.75));
+      border-radius: 18px;
+      padding: 18px 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .ti-sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.9);
+    }
+
+    .ti-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0, #38bdf8, #0ea5e9, #0369a1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #0b1120;
+      box-shadow: 0 8px 25px rgba(8, 47, 73, 0.9);
+    }
+
+    .ti-entity-name {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .ti-entity-sub {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .ti-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .ti-nav-item {
+      padding: 9px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: #cbd5f5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+      transition: 0.17s ease;
+      cursor: pointer;
+    }
+
+    .ti-nav-item::before {
+      content: "●";
+      font-size: 8px;
+      opacity: 0.35;
+    }
+
+    .ti-nav-item:hover {
+      background: rgba(30, 64, 175, 0.25);
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: translateX(2px);
+    }
+
+    .ti-nav-item-active {
+      background: radial-gradient(circle at 0 0, rgba(56, 189, 248, 0.25), rgba(30, 64, 175, 0.65));
+      border-color: rgba(191, 219, 254, 0.7);
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.4), 0 16px 35px rgba(15, 23, 42, 0.85);
+      color: #e5edff;
+    }
+
+    .ti-back-portal {
+      margin-top: auto;
+      padding: 9px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.7);
+      color: #e5e7eb;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: 0.17s ease;
+    }
+
+    .ti-back-portal:hover {
+      background: rgba(15, 23, 42, 0.95);
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(0, 0, 0, 0.6);
+    }
+
+    /* ========================
+          CONTEÚDO PRINCIPAL
+    ========================= */
+    .ti-main {
+      flex: 1;
+      background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.8), #020617);
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.75);
+    }
+
+    .ti-section {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .ti-section.ti-section-active {
+      display: flex;
+    }
+
+    .ti-section h1 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .ti-section h2 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    /* ========================
+          HOME: STATUS + ÚLTIMOS TICKETS
+    ========================= */
+    .ti-status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .ti-status-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 64, 175, 0.55));
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #e5e7eb;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.9);
+      justify-content: space-between;
+    }
+
+    .ti-status-card span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ti-status-card strong {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .ti-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .ti-dot-new {
+      background: #f97316;
+    }
+
+    .ti-dot-processing {
+      background: #38bdf8;
+    }
+
+    .ti-dot-pending {
+      background: #eab308;
+    }
+
+    .ti-dot-solved {
+      background: #22c55e;
+    }
+
+    .ti-dot-closed {
+      background: #64748b;
+    }
+
+    .ti-dot-deleted {
+      background: #ef4444;
+    }
+
+    /* bloco de últimos tickets na HOME */
+    .ti-home-bottom {
+      margin-top: 18px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ti-home-tickets-panel {
+      flex: 1;
+      border-radius: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: radial-gradient(circle at top,
+          rgba(15, 23, 42, 0.98),
+          rgba(15, 23, 42, 0.9));
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .ti-home-tickets-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .ti-home-tickets-header h3 {
+      font-size: 14px;
+    }
+
+    .ti-home-tickets-header span {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    /* ========================
+          FORMULÁRIOS
+    ========================= */
+    .ti-form {
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      border-radius: 16px;
+      padding: 14px 16px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: auto;
+    }
+
+    .ti-form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 13px;
+    }
+
+    .ti-form-row-inline {
+      flex-direction: row;
+      gap: 10px;
+    }
+
+    .ti-form-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      font-size: 12px;
+      color: #cbd5f5;
+    }
+
+    input,
+    select,
+    textarea {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+      padding: 8px 10px;
+      font-size: 13px;
+      color: #e5e7eb;
+      outline: none;
+      transition: 0.17s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6), 0 0 20px rgba(8, 47, 73, 0.6);
+    }
+
+    textarea {
+      resize: none;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: 0.17s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #38bdf8, #0ea5e9, #2563eb);
+      color: #0b1120;
+      font-weight: 600;
+      box-shadow: 0 15px 35px rgba(8, 47, 73, 0.9);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 40px rgba(15, 23, 42, 0.95);
+    }
+
+    .btn-secondary {
+      background: rgba(15, 23, 42, 0.9);
+      color: #e5e7eb;
+      border: 1px solid rgba(148, 163, 184, 0.7);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(15, 23, 42, 0.98);
+      transform: translateY(-1px);
+    }
+
+    .ti-file-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .ti-file-btn {
+      cursor: pointer;
+    }
+
+    .ti-file-name {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    #ticketAttachments {
+      display: none;
+    }
+
+    .ti-status-msg {
+      font-size: 12px;
+      margin-top: 4px;
+      color: #a5b4fc;
+    }
+
+    .ti-empty {
+      font-size: 13px;
+      color: #9ca3af;
+    }
+
+    /* ========================
+          LISTA DE TICKETS (HOME + TELA)
+    ========================= */
+    .ti-tickets-list {
+      flex: 1;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.97), rgba(15, 23, 42, 0.9));
+      padding: 8px 9px;
+      overflow: auto;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* container da página Tickets aproveita toda altura */
+    #tickets .ti-tickets-list {
+      margin-top: 6px;
+    }
+
+    .ti-ticket-item {
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.65);
+      background: linear-gradient(135deg,
+          rgba(15, 23, 42, 0.98),
+          rgba(30, 64, 175, 0.4));
+      padding: 8px 10px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.1fr) minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ti-ticket-item-header {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .ti-ticket-id {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .ti-ticket-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #e5e7eb;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ti-ticket-category {
+      font-size: 12px;
+      color: #cbd5f5;
+    }
+
+    .ti-ticket-status {
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ti-ticket-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+    }
+
+    .ti-ticket-status--resolvido .ti-ticket-status-dot {
+      background: #22c55e;
+    }
+
+    .ti-ticket-status--novo .ti-ticket-status-dot {
+      background: #f97316;
+    }
+
+    .ti-ticket-status--pendente .ti-ticket-status-dot {
+      background: #eab308;
+    }
+
+    .ti-ticket-status--fechado .ti-ticket-status-dot {
+      background: #64748b;
+    }
+
+    .ti-ticket-date {
+      font-size: 12px;
+      color: #9ca3af;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    /* ========================
+          RESERVAS
+    ========================= */
+    #reservations {
+      padding-bottom: 2px;
+    }
+
+    .ti-reservation-form {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      gap: 12px;
+    }
+
+    .ti-reservation-grid {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: 14px;
+      align-items: stretch;
+      min-height: 170px;
+    }
+
+    .ti-reservation-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .ti-reservation-cta {
+      border-radius: 14px;
+      padding: 12px 12px;
+      background: radial-gradient(circle at top right,
+          rgba(56, 189, 248, 0.18),
+          rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(129, 140, 248, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.95);
+    }
+
+    .ti-reservation-cta-title {
+      font-size: 15px;
+    }
+
+    .ti-reservation-cta-text {
+      font-size: 12px;
+      color: #cbd5f5;
+      line-height: 1.4;
+    }
+
+    .ti-reservation-btn {
+      margin-top: auto;
+      width: 100%;
+      justify-content: center;
+      height: 42px;
+      font-size: 13px;
+    }
+
+    .ti-reservation-list-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-radius: 14px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: radial-gradient(circle at top, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
+      padding: 10px 11px;
+      overflow: hidden;
+    }
+
+    .ti-reservation-title {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    #reservationsEmptyMsg {
+      margin-bottom: 4px;
+    }
+
+    .ti-reservations-list {
+      flex: 1;
+      overflow: auto;
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .ti-reservation-item {
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      background: rgba(15, 23, 42, 0.98);
+      padding: 8px 9px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ti-reservation-item-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .ti-reservation-item-date {
+      font-size: 12px;
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .ti-reservation-item-sub {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .ti-reservation-item-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(37, 99, 235, 0.2);
+      border: 1px solid rgba(129, 140, 248, 0.7);
+      color: #bfdbfe;
+      white-space: nowrap;
+    }
+
+    /* ========================
+          RESPONSIVO
+    ========================= */
+    @media (max-width: 1024px) {
+      .ti-layout {
+        padding: 8px;
+      }
+
+      .ti-sidebar {
+        width: 220px;
+      }
+
+      .ti-status-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .ti-reservation-grid {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .ti-layout {
+        flex-direction: column;
+      }
+
+      .ti-sidebar {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+      }
+
+      .ti-nav {
+        flex-direction: row;
+        flex: 1;
+        justify-content: center;
+      }
+
+      .ti-main {
+        height: calc(100vh - 110px);
+      }
+    }
+  </style>
 </head>
 
 <body class="ti-page">
@@ -21,7 +745,7 @@
       </div>
 
       <nav class="ti-nav">
-        <a href="#home" class="ti-nav-item ti-nav-item-active">Inicio</a>
+        <a href="#home" class="ti-nav-item ti-nav-item-active">Início</a>
         <a href="#create" class="ti-nav-item">Criar Tickets</a>
         <a href="#tickets" class="ti-nav-item">Tickets</a>
         <a href="#reservations" class="ti-nav-item">Reservar</a>
@@ -35,50 +759,56 @@
     <!-- CONTEÚDO PRINCIPAL -->
     <main class="ti-main">
       <!-- HOME -->
-      <section id="home" class="ti-section">
+      <section id="home" class="ti-section ti-section-active">
         <h1>Tickets</h1>
         <div class="ti-status-grid">
           <div class="ti-status-card">
-            <span class="ti-dot ti-dot-new"></span>
-            <span>Novo </span>
+            <span><span class="ti-dot ti-dot-new"></span> Novo</span>
             <strong id="countNew">0</strong>
           </div>
           <div class="ti-status-card">
-            <span class="ti-dot ti-dot-processing"></span>
-            <span>Em processamento </span>
+            <span><span class="ti-dot ti-dot-processing"></span> Em processamento</span>
             <strong id="countProcessingAssigned">0</strong>
           </div>
           <div class="ti-status-card">
-            <span class="ti-dot ti-dot-processing"></span>
-            <span>Planejado</span>
+            <span><span class="ti-dot ti-dot-processing"></span> Planejado</span>
             <strong id="countProcessingPlanned">0</strong>
           </div>
           <div class="ti-status-card">
-            <span class="ti-dot ti-dot-pending"></span>
-            <span>Pendente </span>
+            <span><span class="ti-dot ti-dot-pending"></span> Pendente</span>
             <strong id="countPending">0</strong>
           </div>
           <div class="ti-status-card">
-            <span class="ti-dot ti-dot-solved"></span>
-            <span>Resolvido </span>
+            <span><span class="ti-dot ti-dot-solved"></span> Resolvido</span>
             <strong id="countSolved">0</strong>
           </div>
           <div class="ti-status-card">
-            <span class="ti-dot ti-dot-closed"></span>
-            <span>Fechado </span>
+            <span><span class="ti-dot ti-dot-closed"></span> Fechado</span>
             <strong id="countClosed">0</strong>
           </div>
           <div class="ti-status-card">
-            <span class="ti-dot ti-dot-deleted"></span>
-            <span>Excluido </span>
+            <span><span class="ti-dot ti-dot-deleted"></span> Excluído</span>
             <strong id="countDeleted">0</strong>
+          </div>
+        </div>
+
+        <!-- Painel de últimos tickets na HOME -->
+        <div class="ti-home-bottom">
+          <div class="ti-home-tickets-panel">
+            <div class="ti-home-tickets-header">
+              <h3>Meus últimos tickets</h3>
+              <span>Exibindo até 5 recentes</span>
+            </div>
+            <div id="homeTicketsPreview" class="ti-tickets-list">
+              <!-- preenchido via JS -->
+            </div>
           </div>
         </div>
       </section>
 
       <!-- CREATE TICKET -->
       <section id="create" class="ti-section">
-        <h2>Create a ticket</h2>
+        <h2>Criar ticket</h2>
 
         <form class="ti-form" id="ticketForm">
           <div class="ti-form-row">
@@ -96,7 +826,7 @@
               <option value="hardware">Hardware</option>
               <option value="software">Software</option>
               <option value="network">Internet</option>
-              <option value="access">Accessos</option>
+              <option value="access">Acessos</option>
               <option value="other">Outros</option>
             </select>
           </div>
@@ -107,12 +837,12 @@
               <option value="low">Baixa</option>
               <option value="medium">Média</option>
               <option value="high">Alta</option>
-              <option value="critical">Critíca</option>
+              <option value="critical">Crítica</option>
             </select>
           </div>
 
           <div class="ti-form-row">
-            <label for="ticketTitle">Titúlo</label>
+            <label for="ticketTitle">Título</label>
             <input id="ticketTitle" type="text" placeholder="Resumo do incidente ou pedido" />
           </div>
 
@@ -143,47 +873,63 @@
         </form>
       </section>
 
-      <!-- TICKETS (lista - futuramente dinâmica) -->
+      <!-- TICKETS (página completa) -->
       <section id="tickets" class="ti-section">
         <h2>Tickets</h2>
         <p class="ti-empty" id="ticketsEmptyMsg">Nenhum ticket encontrado</p>
-        <div class="ti-tickets-list" id="ticketsList"></div>
+        <div class="ti-tickets-list" id="ticketsList">
+          <!-- preenchido via JS -->
+        </div>
       </section>
 
-      <!-- RESERVATIONS (placeholder) -->
-      <!-- RESERVATIONS (planejamento de dia com baixa demanda) -->
-      <!-- RESERVATIONS (planejamento de dia com baixa demanda) -->
+      <!-- RESERVAS -->
       <section id="reservations" class="ti-section">
         <h2>Reservas</h2>
 
         <form class="ti-form ti-reservation-form" id="reservationForm">
-          <div class="ti-form-row">
-            <label for="reservationDate">Data desejada</label>
-            <input id="reservationDate" type="date" />
+          <div class="ti-reservation-grid">
+            <!-- COLUNA ESQUERDA -->
+            <div class="ti-reservation-fields">
+              <div class="ti-form-row ti-form-row-inline">
+                <div class="ti-form-col">
+                  <label for="reservationDate">Data desejada</label>
+                  <input id="reservationDate" type="date" />
+                </div>
+
+                <div class="ti-form-col">
+                  <label for="reservationPeriod">Período</label>
+                  <select id="reservationPeriod">
+                    <option value="manha">Manhã</option>
+                    <option value="tarde">Tarde</option>
+                    <option value="dia_todo" selected>Dia todo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="ti-form-row">
+                <label for="reservationReason">Motivo / observação</label>
+                <textarea id="reservationReason" rows="3"
+                  placeholder="Ex.: Dia com pouca demanda, ajuste de agenda, tarefas internas..."></textarea>
+              </div>
+            </div>
+
+            <!-- COLUNA DIREITA -->
+            <aside class="ti-reservation-cta">
+              <h3 class="ti-reservation-cta-title">Planeje seus dias de baixa demanda</h3>
+              <p class="ti-reservation-cta-text">
+                Registre reservas para focar em tarefas internas, treinamentos ou
+                atividades que exigem mais concentração.
+              </p>
+
+              <button type="button" class="btn-primary ti-reservation-btn" id="btnRegistrarReserva">
+                + Registrar reserva
+              </button>
+
+              <div id="reservaMsg" class="ti-status-msg"></div>
+            </aside>
           </div>
 
-          <div class="ti-form-row">
-            <label for="reservationPeriod">Período</label>
-            <select id="reservationPeriod">
-              <option value="manha">Manhã</option>
-              <option value="tarde">Tarde</option>
-              <option value="dia_todo" selected>Dia todo</option>
-            </select>
-          </div>
-
-          <div class="ti-form-row">
-            <label for="reservationReason">Motivo / observação</label>
-            <textarea id="reservationReason" rows="3"
-              placeholder="Ex.: Dia com pouca demanda, ajuste de agenda, tarefas internas..."></textarea>
-          </div>
-
-          <!-- ✅ Agora só um botão e uma mensagem -->
-          <button type="button" class="btn-primary" id="btnRegistrarReserva">
-            + Registrar reserva
-          </button>
-
-          <div id="reservaMsg" class="ti-status-msg"></div>
-
+          <!-- LISTA -->
           <div class="ti-reservation-list-wrapper">
             <h3 class="ti-reservation-title">Minhas reservas</h3>
             <p class="ti-empty" id="reservationsEmptyMsg">
@@ -193,7 +939,6 @@
           </div>
         </form>
       </section>
-
     </main>
   </div>
 

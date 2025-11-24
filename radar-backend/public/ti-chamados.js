@@ -36,7 +36,6 @@ async function apiFetch(path, options = {}) {
         "Content-Type": "application/json",
       });
 
-  // não mandar a flag pro fetch
   const { isFormData: _ignore, ...restOptions } = options;
 
   const resp = await fetch(`${BACKEND_BASE_URL}${path}`, {
@@ -69,9 +68,12 @@ async function apiFetch(path, options = {}) {
 
 // ====== ELEMENTOS TI-CHAMADOS ======
 const statusCards = document.querySelectorAll(".ti-status-card");
+
+// Tickets (aba + home)
 const ticketsSection = document.getElementById("tickets");
-const createSection = document.getElementById("create");
-const reservationsSection = document.getElementById("reservations");
+const ticketsListEl = document.getElementById("ticketsList");
+const ticketsEmptyMsgEl = document.getElementById("ticketsEmptyMsg");
+const homeTicketsPreviewEl = document.getElementById("homeTicketsPreview");
 
 // campos do formulário de ticket
 const formEl = document.getElementById("ticketForm");
@@ -106,7 +108,7 @@ function showInlineStatus(elementId, type, message) {
   if (type === "error") el.classList.add("ti-status-error");
 }
 
-// ====== RENDER RESUMO (cards do topo) ======
+// ====== RESUMO (cards do topo) ======
 async function carregarResumo() {
   try {
     const resumo = await apiFetch("/ti/chamados/resumo");
@@ -132,7 +134,7 @@ async function carregarResumo() {
   }
 }
 
-// ====== RENDER LISTA DE CHAMADOS ======
+// ====== HELPERS DE DATA / STATUS ======
 function formatarDataHoraBR(iso) {
   if (!iso) return "";
   const d = new Date(iso);
@@ -145,68 +147,80 @@ function formatarDataHoraBR(iso) {
   return `${dia}/${mes}/${ano} ${hh}:${mm}`;
 }
 
-function badgeStatus(status) {
-  const s = (status || "").toLowerCase();
+function mapStatus(statusRaw) {
+  const s = (statusRaw || "").toLowerCase();
 
-  if (s === "new") return '<span class="ti-badge ti-badge-new">Novo</span>';
+  if (s === "new") return { label: "Novo", css: "ti-ticket-status--novo" };
   if (s.startsWith("processing"))
-    return '<span class="ti-badge ti-badge-processing">Processando</span>';
+    return { label: "Em processamento", css: "ti-ticket-status--processing" };
   if (s === "pending")
-    return '<span class="ti-badge ti-badge-pending">Pendente</span>';
+    return { label: "Pendente", css: "ti-ticket-status--pendente" };
   if (s === "solved")
-    return '<span class="ti-badge ti-badge-solved">Resolvido</span>';
+    return { label: "Resolvido", css: "ti-ticket-status--resolvido" };
   if (s === "closed")
-    return '<span class="ti-badge ti-badge-closed">Fechado</span>';
+    return { label: "Fechado", css: "ti-ticket-status--fechado" };
   if (s === "deleted")
-    return '<span class="ti-badge ti-badge-deleted">Excluido</span>';
+    return { label: "Excluído", css: "ti-ticket-status--fechado" };
 
-  return `<span class="ti-badge">${status || "N/A"}</span>`;
+  return { label: statusRaw || "N/A", css: "" };
 }
 
-function renderizarTickets(lista) {
-  if (!ticketsSection) return;
+// ====== RENDER TICKET EM CARD ======
+function criarTicketCard(ticket) {
+  const numero = ticket.numero || `#${ticket.id}`;
+  const titulo = ticket.titulo || "(sem título)";
+  const categoria = ticket.categoria || "-";
+  const { label: statusLabel, css: statusCss } = mapStatus(ticket.status);
+  const criadoEm = formatarDataHoraBR(ticket.criado_em);
 
-  if (!lista || !lista.length) {
-    ticketsSection.innerHTML = `
-      <h2>Tickets</h2>
-      <p class="ti-empty">No item found</p>
-    `;
-    return;
-  }
+  const div = document.createElement("div");
+  div.className = `ti-ticket-item ${statusCss}`.trim();
 
-  const linhas = lista
-    .map(
-      (t) => `
-      <tr>
-        <td>${t.numero || "#" + t.id}</td>
-        <td>${t.titulo}</td>
-        <td>${t.categoria || "-"}</td>
-        <td>${badgeStatus(t.status)}</td>
-        <td>${formatarDataHoraBR(t.criado_em)}</td>
-      </tr>
-    `
-    )
-    .join("");
+  div.innerHTML = `
+    <div class="ti-ticket-info">
+      <span class="ti-ticket-id">${numero}</span>
+      <span class="ti-ticket-date">${criadoEm}</span>
+      <span class="ti-ticket-title" title="${titulo}">${titulo}</span>
+    </div>
 
-  ticketsSection.innerHTML = `
-    <h2>Tickets</h2>
-    <div class="ti-table-wrapper">
-      <table class="ti-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Titulo</th>
-            <th>Categoria</th>
-            <th>Status</th>
-            <th>Criado em </th>
-          </tr>
-        </thead>
-        <tbody>
-          ${linhas}
-        </tbody>
-      </table>
+    <div class="ti-ticket-category">${categoria}</div>
+
+    <div class="ti-ticket-status">
+      <span class="ti-ticket-status-dot"></span>
+      <span>${statusLabel}</span>
     </div>
   `;
+
+  return div;
+}
+
+// ====== RENDER LISTA DE CHAMADOS (aba Tickets + Home) ======
+function renderizarTickets(lista) {
+  if (!ticketsListEl || !ticketsEmptyMsgEl) return;
+
+  if (!lista || !lista.length) {
+    ticketsListEl.innerHTML = "";
+    ticketsEmptyMsgEl.style.display = "block";
+  } else {
+    ticketsEmptyMsgEl.style.display = "none";
+    ticketsListEl.innerHTML = "";
+    lista.forEach((t) => {
+      ticketsListEl.appendChild(criarTicketCard(t));
+    });
+  }
+
+  // preview na Home (até 5 últimos)
+  if (homeTicketsPreviewEl) {
+    homeTicketsPreviewEl.innerHTML = "";
+    if (lista && lista.length) {
+      lista.slice(0, 5).forEach((t) => {
+        homeTicketsPreviewEl.appendChild(criarTicketCard(t));
+      });
+    } else {
+      homeTicketsPreviewEl.innerHTML =
+        '<p class="ti-empty">Nenhum ticket encontrado.</p>';
+    }
+  }
 }
 
 async function carregarTickets() {
@@ -215,11 +229,14 @@ async function carregarTickets() {
     renderizarTickets(lista);
   } catch (err) {
     console.error("Erro carregarTickets:", err);
-    if (ticketsSection) {
-      ticketsSection.innerHTML = `
-        <h2>Tickets</h2>
-        <p class="ti-empty">Erro ao carregar seus tickets.</p>
-      `;
+    if (ticketsListEl && ticketsEmptyMsgEl) {
+      ticketsListEl.innerHTML = "";
+      ticketsEmptyMsgEl.textContent = "Erro ao carregar seus tickets.";
+      ticketsEmptyMsgEl.style.display = "block";
+    }
+    if (homeTicketsPreviewEl) {
+      homeTicketsPreviewEl.innerHTML =
+        '<p class="ti-empty">Erro ao carregar tickets.</p>';
     }
   }
 }
@@ -243,7 +260,6 @@ async function handleCriarTicket(e) {
   try {
     showInlineStatus("ticketMsg", "ok", "Enviando chamado...");
 
-    // ----- MONTA O FORM-DATA (texto + arquivos) -----
     const formData = new FormData();
     formData.append("titulo", titulo.trim());
     formData.append("descricao", descricao);
@@ -253,18 +269,16 @@ async function handleCriarTicket(e) {
 
     if (fileInput && fileInput.files && fileInput.files.length > 0) {
       for (let i = 0; i < fileInput.files.length; i++) {
-        formData.append("anexos", fileInput.files[i]); // << nome do campo igual ao backend
+        formData.append("anexos", fileInput.files[i]);
       }
     }
 
-    // usa isFormData pra NÃO forçar Content-Type JSON
     await apiFetch("/ti/chamados", {
       method: "POST",
       body: formData,
       isFormData: true,
     });
 
-    // ----- LIMPA FORMULÁRIO -----
     if (titleInput) titleInput.value = "";
     if (descTextarea) descTextarea.value = "";
     if (categorySelect) categorySelect.value = "-----";
@@ -313,34 +327,48 @@ function renderizarReservas(lista) {
   }
 
   reservationsEmptyMsgEl.style.display = "none";
+  reservationsListEl.innerHTML = "";
 
-  const cards = lista
-    .map((r) => {
-      const dataFmt = formatarDataBR(r.data);
-      const periodo = r.periodo || "dia_todo";
-      const motivo = r.motivo || "";
+  lista.forEach((r) => {
+    const dataFmt = formatarDataBR(r.data);
+    const periodo = r.periodo || "dia_todo";
+    const motivo = r.motivo || "";
 
-      let periodoLabel = "Dia todo";
-      if (periodo === "manha") periodoLabel = "Manhã";
-      if (periodo === "tarde") periodoLabel = "Tarde";
+    let periodoLabel = "Dia todo";
+    if (periodo === "manha") periodoLabel = "Manhã";
+    if (periodo === "tarde") periodoLabel = "Tarde";
 
-      return `
-        <div class="ti-reservation-card">
-          <div class="ti-reservation-card-header">
-            <span class="ti-reservation-date">${dataFmt}</span>
-            <span class="ti-reservation-period">${periodoLabel}</span>
-          </div>
-          ${motivo ? `<div class="ti-reservation-reason">${motivo}</div>` : ""}
-        </div>
-      `;
-    })
-    .join("");
+    const card = document.createElement("div");
+    card.className = "ti-reservation-item";
 
-  reservationsListEl.innerHTML = cards;
+    const main = document.createElement("div");
+    main.className = "ti-reservation-item-main";
+
+    const dateSpan = document.createElement("span");
+    dateSpan.className = "ti-reservation-item-date";
+    dateSpan.textContent = `${dataFmt} - ${periodoLabel}`;
+
+    main.appendChild(dateSpan);
+
+    if (motivo) {
+      const motivoSpan = document.createElement("span");
+      motivoSpan.className = "ti-reservation-item-sub";
+      motivoSpan.textContent = motivo;
+      main.appendChild(motivoSpan);
+    }
+
+    const tag = document.createElement("span");
+    tag.className = "ti-reservation-item-tag";
+    tag.textContent = "Planejado";
+
+    card.appendChild(main);
+    card.appendChild(tag);
+
+    reservationsListEl.appendChild(card);
+  });
 }
 
 async function carregarReservas() {
-  if (!reservationsSection) return;
   try {
     const lista = await apiFetch("/ti/reservas");
     renderizarReservas(lista);
@@ -375,7 +403,7 @@ async function handleCriarReserva(e) {
 
     if (reservationReasonTextarea) reservationReasonTextarea.value = "";
 
-    showInlineStatus("reservaMsg", "ok", "Reserva registrada com sucesso!");
+    showInlineStatus("reservaMsg", "ok", "Reserva registrado com sucesso!");
 
     await carregarReservas();
   } catch (err) {
@@ -387,17 +415,6 @@ async function handleCriarReserva(e) {
     );
   }
 }
-
-// ====== NAV SCROLL SUAVE ======
-document.querySelectorAll(".ti-nav-item[href^='#']").forEach((link) => {
-  link.addEventListener("click", (e) => {
-    const href = link.getAttribute("href");
-    if (!href || href === "#") return;
-    e.preventDefault();
-    const alvo = document.querySelector(href);
-    if (alvo) alvo.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-});
 
 // ====== INIT ======
 window.addEventListener("DOMContentLoaded", async () => {
@@ -446,4 +463,30 @@ window.addEventListener("DOMContentLoaded", async () => {
   await carregarResumo();
   await carregarTickets();
   await carregarReservas();
+});
+
+/* ===========================
+   SISTEMA DE TROCA DE ABAS
+=========================== */
+document.querySelectorAll(".ti-nav-item").forEach((link) => {
+  link.addEventListener("click", function (e) {
+    const href = this.getAttribute("href") || "";
+    if (!href.startsWith("#")) return;
+
+    e.preventDefault();
+
+    document
+      .querySelectorAll(".ti-nav-item")
+      .forEach((item) => item.classList.remove("ti-nav-item-active"));
+
+    this.classList.add("ti-nav-item-active");
+
+    document
+      .querySelectorAll(".ti-section")
+      .forEach((section) => section.classList.remove("ti-section-active"));
+
+    const targetId = href.replace("#", "");
+    const targetEl = document.getElementById(targetId);
+    if (targetEl) targetEl.classList.add("ti-section-active");
+  });
 });

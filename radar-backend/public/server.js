@@ -228,7 +228,7 @@ const infoModalClose = document.getElementById("infoModalClose");
 
 function showInfoModal(title, message) {
   infoModalTitle.textContent = title;
-  infoModalMessage.textContent = message;
+  infoModalMessage.innerHTML = message;
   infoModal.classList.remove("hidden");
 }
 
@@ -717,13 +717,15 @@ confirmClearBtn.addEventListener("click", () => {
   confirmClearOverlay.classList.add("hidden");
 });
 
-// ESC fecha modais
+// ---------- ESC FECHA MODAIS ----------
 window.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     confirmClearOverlay.classList.add("hidden");
     confirmRetryOverlay.classList.add("hidden");
     confirmImportOverlay.classList.add("hidden");
     infoModal.classList.add("hidden");
+    const historyOverlay = document.getElementById("historyOverlay");
+    if (historyOverlay) historyOverlay.classList.add("hidden");
   }
 });
 
@@ -812,11 +814,10 @@ exportExcelBtn.addEventListener("click", () => {
   );
 });
 
-// ---------- HISTÓRICO (MODAL BONITO) ----------
+// ----------------- HISTÓRICO – CONTROLA MODAL E LISTA DE LOTES -----------------
 
 const historyOverlay = document.getElementById("historyOverlay");
 const historyForm = document.getElementById("historyForm");
-const historyCancelBtn = document.getElementById("historyCancel");
 const historySingleDateGroup = document.getElementById(
   "historySingleDateGroup"
 );
@@ -825,7 +826,10 @@ const historySingleDate = document.getElementById("historySingleDate");
 const historyFromDate = document.getElementById("historyFromDate");
 const historyToDate = document.getElementById("historyToDate");
 
-// abre o modal
+const historyListContainer = document.getElementById("historyListContainer");
+const historyListTableBody = document.querySelector("#historyListTable tbody");
+
+// abre o modal de histórico
 historyBtn.addEventListener("click", () => {
   const token = getToken();
   if (!token) {
@@ -836,9 +840,7 @@ historyBtn.addEventListener("click", () => {
     return;
   }
 
-  // reset básico
   historyForm.reset();
-  // tipo padrão = "dia"
   const radioDia = historyForm.querySelector(
     'input[name="historyType"][value="dia"]'
   );
@@ -850,36 +852,22 @@ historyBtn.addEventListener("click", () => {
   historyOverlay.classList.remove("hidden");
 });
 
-// troca entre "dia" e "intervalo"
-historyForm.addEventListener("change", (e) => {
-  if (e.target.name === "historyType") {
-    if (e.target.value === "dia") {
-      historySingleDateGroup.style.display = "block";
-      historyIntervalGroup.style.display = "none";
-      historySingleDate.required = true;
-      historyFromDate.required = false;
-      historyToDate.required = false;
-    } else {
-      historySingleDateGroup.style.display = "none";
-      historyIntervalGroup.style.display = "flex";
-      historySingleDate.required = false;
-      historyFromDate.required = true;
-      historyToDate.required = true;
-    }
-  }
-});
-
 // cancelar modal
-historyCancelBtn.addEventListener("click", () => {
+document.getElementById("historyCancel").addEventListener("click", () => {
   historyOverlay.classList.add("hidden");
 });
 
-// ESC fecha o modal de histórico também (junta com o que você já tem)
-window.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    historyOverlay.classList.add("hidden");
-    // (deixe aqui também os outros modais se já tiver)
-  }
+// troca entre "dia" e "intervalo"
+document.querySelectorAll('input[name="historyType"]').forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    if (e.target.value === "dia") {
+      historySingleDateGroup.style.display = "block";
+      historyIntervalGroup.style.display = "none";
+    } else {
+      historySingleDateGroup.style.display = "none";
+      historyIntervalGroup.style.display = "flex";
+    }
+  });
 });
 
 // submit do formulário de histórico
@@ -899,127 +887,141 @@ historyForm.addEventListener("submit", async (e) => {
     'input[name="historyType"]:checked'
   )?.value;
 
-  try {
-    let url;
-    let nomeBaseArquivo;
-
-    if (tipo === "dia") {
-      const data = historySingleDate.value;
-      if (!data) {
-        showInfoModal("Campo obrigatório", "Informe a data.");
-        return;
-      }
-
-      url = `${BACKEND_BASE_URL}/historico?data=${encodeURIComponent(
-        data
-      )}&registrarExport=1`;
-      nomeBaseArquivo = `historico_${data}`;
-    } else {
-      const from = historyFromDate.value;
-      const to = historyToDate.value;
-
-      if (!from || !to) {
-        showInfoModal(
-          "Campos obrigatórios",
-          "Informe a data inicial e a data final."
-        );
-        return;
-      }
-
-      url = `${BACKEND_BASE_URL}/historico?from=${encodeURIComponent(
-        from
-      )}&to=${encodeURIComponent(to)}&registrarExport=1`;
-      nomeBaseArquivo = `historico_${from}_a_${to}`;
+  if (tipo === "dia") {
+    const data = historySingleDate.value;
+    if (!data) {
+      showInfoModal("Campo obrigatório", "Informe a data.");
+      return;
     }
+    await carregarHistoricoLotes({ tipo: "dia", data });
+  } else {
+    const from = historyFromDate.value;
+    const to = historyToDate.value;
 
-    const resp = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!resp.ok) {
-      console.error("HTTP erro histórico:", resp.status);
-      throw new Error(`HTTP ${resp.status}`);
-    }
-
-    const linhas = await resp.json();
-
-    if (!linhas.length) {
+    if (!from || !to) {
       showInfoModal(
-        "Sem dados",
-        "Não há registros para o período informado no histórico."
+        "Campos obrigatórios",
+        "Informe a data inicial e a data final."
       );
       return;
     }
 
-    exportarHistoricoExcel(linhas, nomeBaseArquivo);
-
-    historyOverlay.classList.add("hidden");
-  } catch (err) {
-    console.error("Erro histórico:", err);
-    showInfoModal(
-      "Erro histórico",
-      "Não foi possível carregar o histórico para o período informado."
-    );
+    await carregarHistoricoLotes({ tipo: "intervalo", from, to });
   }
+
+  historyOverlay.classList.add("hidden");
 });
 
-// mesma função de antes, só reaproveitada
-function exportarHistoricoExcel(linhas, nomeBase) {
-  const data = [];
-  data.push([
-    "Data da Consulta",
-    "CNPJ",
-    "Contribuinte",
-    "Situação da Habilitação",
-    "Data da Situação",
-    "Submodalidade",
-    "Razão Social",
-    "Nome Fantasia",
-    "Município",
-    "UF",
-    "Data de Constituição",
-    "Regime Tributário",
-    "Data Opção Simples",
-    "Capital Social",
-  ]);
+// carrega lista de lotes do backend
+async function carregarHistoricoLotes(filtro) {
+  try {
+    const params = new URLSearchParams();
 
-  linhas.forEach((r) => {
-    data.push([
-      formatarDataBR(r.dataConsulta),
-      r.cnpj,
-      r.contribuinte,
-      r.situacao,
-      r.dataSituacao,
-      r.submodalidade,
-      r.razaoSocial,
-      r.nomeFantasia,
-      r.municipio,
-      r.uf,
-      r.dataConstituicao,
-      r.regimeTributario,
-      r.dataOpcaoSimples,
-      r.capitalSocial,
-    ]);
-  });
+    if (filtro.tipo === "dia") {
+      params.append("date", filtro.data);
+    } else {
+      params.append("from", filtro.from);
+      params.append("to", filtro.to);
+    }
 
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Histórico");
+    const resp = await fetch(
+      `${BACKEND_BASE_URL}/api/historico-exportacoes?${params.toString()}`,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${getToken()}`,
+        },
+      }
+    );
 
-  let nomeArquivo = prompt(
-    "Nome do arquivo histórico (sem extensão):",
-    nomeBase
-  );
-  if (!nomeArquivo || !nomeArquivo.trim()) {
-    nomeArquivo = nomeBase;
+    if (!resp.ok) {
+      console.error("Erro ao buscar histórico:", await resp.text());
+      showInfoModal(
+        "Erro histórico",
+        "Não foi possível carregar o histórico de exportações."
+      );
+      return;
+    }
+
+    const lotes = await resp.json();
+    renderizarHistoricoLotes(lotes);
+  } catch (err) {
+    console.error("Erro carregarHistoricoLotes:", err);
+    showInfoModal(
+      "Erro histórico",
+      "Ocorreu um erro ao tentar consultar o histórico."
+    );
+  }
+}
+
+function renderizarHistoricoLotes(lotes) {
+  if (!historyListContainer) return;
+
+  historyListContainer.style.display = "block";
+  historyListTableBody.innerHTML = "";
+
+  if (!lotes.length) {
+    historyListTableBody.innerHTML = `
+      <tr class="no-data-row">
+        <td colspan="5" class="no-data">
+          Nenhuma exportação encontrada para o período selecionado
+        </td>
+      </tr>
+    `;
+    return;
   }
 
-  XLSX.writeFile(wb, `${nomeArquivo.trim()}.xlsx`);
+  for (const lote of lotes) {
+    const tr = document.createElement("tr");
 
-  showInfoModal(
-    "Histórico exportado",
-    `Arquivo Excel gerado com sucesso:<br><strong>${nomeArquivo.trim()}.xlsx</strong>`
-  );
+    const dt = new Date(lote.criado_em);
+    const data = dt.toLocaleDateString("pt-BR");
+    const hora = dt.toLocaleTimeString("pt-BR", { hour12: false });
+
+    const nomeArquivo =
+      lote.nome_arquivo ||
+      `historico_${lote.data_inicio}_${lote.data_fim}`.replace(/-/g, "");
+
+    tr.innerHTML = `
+      <td>${data} ${hora}</td>
+      <td>${lote.usuario_nome || "-"}</td>
+      <td>${nomeArquivo}</td>
+      <td>${lote.total_registros}</td>
+      <td style="text-align:center;">
+        <button type="button" class="btn-ghost btn-download-lote" data-id="${
+          lote.id
+        }">
+          ⬇
+        </button>
+      </td>
+    `;
+
+    historyListTableBody.appendChild(tr);
+  }
+
+  historyListTableBody.querySelectorAll(".btn-download-lote").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      downloadLote(id);
+    });
+  });
+}
+
+function downloadLote(id) {
+  const token = getToken();
+  if (!token) {
+    showInfoModal(
+      "Sessão expirada",
+      "Você precisa estar logado para baixar o arquivo."
+    );
+    return;
+  }
+
+  const url = `${BACKEND_BASE_URL}/api/historico-exportacoes/${id}/download?token=${encodeURIComponent(
+    token
+  )}`;
+
+  window.open(url, "_blank");
 }
 
 // ---------- BOTÃO: RECONSULTAR SELECIONADOS ----------

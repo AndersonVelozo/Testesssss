@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 const path = require("path");
 const fs = require("fs");
 const multer = require("multer");
+const XLSX = require("xlsx"); // npm i xlsx
 
 const app = express();
 
@@ -196,6 +197,19 @@ async function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_chamados_ti_arquivos_chamado
       ON chamados_ti_arquivos (chamado_id);
+
+
+      -- NOVA TABELA PARA GUARDAR OS LOTES DE EXPORTAÇÃO
+CREATE TABLE historico_exportacoes (
+  id             SERIAL PRIMARY KEY,
+  user_id        INTEGER NOT NULL REFERENCES usuarios(id),
+  filtro_tipo    VARCHAR(20) NOT NULL,     -- 'dia' ou 'intervalo'
+  data_inicio    DATE NOT NULL,
+  data_fim       DATE NOT NULL,
+  nome_arquivo   TEXT,                     -- pode ser NULL
+  total_registros INTEGER NOT NULL,
+  criado_em      TIMESTAMPTZ DEFAULT now()
+);
 
   `;
 
@@ -1338,6 +1352,165 @@ app.get("/consulta-completa", authMiddleware, async (req, res) => {
     return res.status(500).json({ error: "Erro interno em consulta-completa" });
   }
 });
+
+const TABELA_CONSULTAS = "radar_consultas";
+
+app.get("/api/historico-exportacoes", authMiddleware, async (req, res) => {
+  try {
+    const { date, from, to } = req.query;
+
+    let sql = `
+        SELECT he.id,
+               he.criado_em,
+               he.filtro_tipo,
+               he.data_inicio,
+               he.data_fim,
+               he.nome_arquivo,
+               he.total_registros,
+               u.nome AS usuario_nome
+        FROM historico_exportacoes he
+        JOIN usuarios u ON u.id = he.user_id
+        WHERE 1=1
+      `;
+    const params = [];
+
+    if (date) {
+      params.push(date);
+      sql += ` AND he.criado_em::date = $${params.length}`;
+    } else if (from && to) {
+      params.push(from);
+      sql += ` AND he.criado_em::date >= $${params.length}`;
+      params.push(to);
+      sql += ` AND he.criado_em::date <= $${params.length}`;
+    }
+
+    sql += " ORDER BY he.criado_em DESC";
+
+    const { rows } = await pool.query(sql, params);
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro GET /api/historico-exportacoes:", err);
+    res.status(500).json({ error: "Erro ao listar histórico de exportações" });
+  }
+});
+
+// cria um registro de histórico e já devolve os dados para gerar o Excel no front
+app.post("/api/historico-exportacoes", authMiddleware, async (req, res) => {
+  try {
+    const user = req.user; // vem do authMiddleware
+    const {
+      filtro_tipo, // 'dia' ou 'intervalo'
+      data_inicio, // 'YYYY-MM-DD'
+      data_fim, // 'YYYY-MM-DD'
+      nome_arquivo, // opcional
+    } = req.body || {};
+
+    if (!filtro_tipo || !data_inicio || !data_fim) {
+      return res.status(400).json({ error: "Parâmetros inválidos." });
+    }
+
+    // Busca todos os registros desse período
+    const paramsDados = [data_inicio, data_fim];
+    const sqlDados = `
+        SELECT *
+        FROM ${TABELA_CONSULTAS}
+        WHERE data_consulta::date BETWEEN $1 AND $2
+        ORDER BY data_consulta ASC
+      `;
+    const { rows: dados } = await pool.query(sqlDados, paramsDados);
+
+    // Salva o resumo do lote na tabela de histórico
+    const paramsHist = [
+      user.id,
+      filtro_tipo,
+      data_inicio,
+      data_fim,
+      nome_arquivo || null,
+      dados.length,
+    ];
+    const sqlHist = `
+        INSERT INTO historico_exportacoes
+          (user_id, filtro_tipo, data_inicio, data_fim, nome_arquivo, total_registros)
+        VALUES ($1,$2,$3,$4,$5,$6)
+        RETURNING id, criado_em
+      `;
+    const { rows: histRows } = await pool.query(sqlHist, paramsHist);
+    const lote = histRows[0];
+
+    // devolve o ID do lote + os dados para o front gerar o Excel
+    res.json({
+      id_exportacao: lote.id,
+      criado_em: lote.criado_em,
+      total_registros: dados.length,
+      dados,
+    });
+  } catch (err) {
+    console.error("Erro POST /api/historico-exportacoes:", err);
+    res.status(500).json({ error: "Erro ao criar histórico de exportação" });
+  }
+});
+
+// DOWNLOAD de um lote antigo: refaz a consulta e devolve o XLSX pronto
+app.get(
+  "/api/historico-exportacoes/:id/download",
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const { rows } = await pool.query(
+        `
+        SELECT he.*, u.nome AS usuario_nome
+        FROM historico_exportacoes he
+        JOIN usuarios u ON u.id = he.user_id
+        WHERE he.id = $1
+      `,
+        [id]
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({ error: "Exportação não encontrada" });
+      }
+
+      const lote = rows[0];
+
+      // busca novamente os dados originais pelo filtro salvo
+      const paramsDados = [lote.data_inicio, lote.data_fim];
+      const sqlDados = `
+        SELECT *
+        FROM ${TABELA_CONSULTAS}
+        WHERE data_consulta::date BETWEEN $1 AND $2
+        ORDER BY data_consulta ASC
+      `;
+      const { rows: dados } = await pool.query(sqlDados, paramsDados);
+
+      // monta XLSX na hora
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(dados);
+      XLSX.utils.book_append_sheet(wb, ws, "Dados");
+
+      const wbout = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+      const nomeBase =
+        lote.nome_arquivo ||
+        `historico_${lote.data_inicio}_${lote.data_fim}`.replace(/-/g, "");
+
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${nomeBase}.xlsx"`
+      );
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+
+      res.send(wbout);
+    } catch (err) {
+      console.error("Erro GET /api/historico-exportacoes/:id/download:", err);
+      res.status(500).json({ error: "Erro ao gerar download do histórico" });
+    }
+  }
+);
 
 // ================= HISTÓRICO (COM AUTH) =================
 

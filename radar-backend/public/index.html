@@ -1671,6 +1671,29 @@
     </div>
 
     <!-- ========== MODAL HISTÓRICO ========== -->
+
+    <!-- LISTA DE LOTES EXPORTADOS (HISTÓRICO) -->
+    <div id="historyListContainer" class="table-wrapper" style="margin-top: 18px; display: none;">
+      <table id="historyListTable">
+        <thead>
+          <tr>
+            <th>Enviado em</th>
+            <th>Usuário</th>
+            <th>Nome do arquivo</th>
+            <th>Total de registros</th>
+            <th style="width: 80px; text-align:center;">Download</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="no-data-row">
+            <td colspan="5" class="no-data">
+              Nenhuma exportação encontrada para o período selecionado
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div id="historyOverlay" class="modal-overlay hidden">
       <div class="modal">
         <h2>Exportar histórico</h2>
